@@ -41,7 +41,8 @@ namespace Chefbook.API.Controllers
             _cloudinaryConfig = cloudinaryConfig;
             Account account=new Account(_cloudinaryConfig.Value.CloudName,_cloudinaryConfig.Value.ApiKey,_cloudinaryConfig.Value.ApiSecret);
             _cloudinary=new Cloudinary(account);
-            
+           
+
         }
      
 
@@ -77,15 +78,18 @@ namespace Chefbook.API.Controllers
                     {
                         using (var stream = file.OpenReadStream())
                         {
+                            
                             var uploadParams = new ImageUploadParams
                             {
-                                File = new FileDescription(file.Name, stream)
+                                File = new FileDescription(file.Name, stream),
+                               
+
                             };
 
-                            uploadResult = _cloudinary.Upload(uploadParams);
+                          
                         }
                     }
-
+                
 
 
                     images.Add(new Image { Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid, PublicId = uploadResult.PublicId });

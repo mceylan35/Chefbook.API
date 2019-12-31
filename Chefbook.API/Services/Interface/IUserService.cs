@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Chefbook.API.Controllers;
+using Chefbook.API.Models;
 using Chefbook.API.Repository;
 using Chefbook.Model.Models;
 
@@ -13,6 +14,7 @@ namespace Chefbook.API.Services.RepositoryInterfaces
         Task<User> Register(User user, string password);
         Task<User> Login(string userName, string password);
         Task<bool> UserExists(string userName);
+        Task<bool> ChangePassword(ChangePasswordViewModel model, Guid userId);
         bool Exists(Guid postId);
         List<User> Users(string user);
         List<Post> Wall(Guid userId);

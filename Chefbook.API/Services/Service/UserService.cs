@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Chefbook.API.Context;
+using Chefbook.API.Models;
 using Chefbook.API.Repository;
 using Chefbook.API.Services.RepositoryInterfaces;
 using Chefbook.Model.Models;
+using Microsoft.AspNetCore.Identity.UI.V3.Pages.Account.Manage.Internal;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -116,6 +118,32 @@ namespace Chefbook.API.Services.RepositoryServices
                 }
                 return true;
             }
+        }
+
+  
+
+        public async Task<bool> ChangePassword(ChangePasswordViewModel model, Guid userId)
+        {
+
+            var user = GetById(userId);
+            bool oldpw = VerifyPasswordHash(model.OldPassword, user.PasswordHash, user.PasswordSalt);
+
+            if (model.Password==model.VerifiedPassword && oldpw)
+            {
+               
+                    
+                    byte[] passwordHash, passwordSalt;
+                    CreatePasswordHash(model.Password, out passwordHash, out passwordSalt);
+                    user.PasswordHash = passwordHash;
+                    user.PasswordSalt = passwordSalt;
+                    Update(user);
+                    return true;
+
+
+            }
+
+            return false;
+
         }
 
     }

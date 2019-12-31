@@ -175,51 +175,12 @@ namespace Chefbook.API.Controllers
 
                 var posts = _postService.GetAll(i => i.UserId == Guid.Parse(currentUserId));
 
-            //public Guid Id { get; set; }
-            //public string Title { get; set; }
-              //public string Description { get; set; }
-             //public string CommentCount { get; set; }
-              //public string RateNumber { get; set; }
-           //public string PictureUrl { get; set; }
-            List<ProfilePostsDto> profilePosts=new List<ProfilePostsDto>();
-                
-
-
-
-
-
-                //foreach (var item in posts)
-                //{
-                //  //  var postpic = _imageService.GetAll(i => i.PostId == item.Id).FirstOrDefault();
-                //  var postpic = _imageService.FindImage(item.Id);
-                //    if (postpic!=null)
-                //    {
-                //        profilePosts.Add(new ProfilePostsDto
-                //        {
-                //            Id = item.Id,
-                //            CommentCount = "5",
-                //            Description = item.Description.Trim(),
-                //            Title = item.Title.Trim(),
-                //            PictureUrl = postpic.ImageUrls.Trim(),
-                //            RateNumber = "5",
-                //            LikeCount = item.LikeCount.ToString()
-
-
-
-                //        });
-                    
-                //    }
-               
-                //}
-                
-
-
-                // var images = _imageService.Get(i => i.PostId ==);
+             
                 ProfileDto profileDto = new ProfileDto();
 
                 profileDto.UserName = kullanici.UserName.Trim();
                 profileDto.Cover= "https://i.nefisyemektarifleri.com/2018/05/04/mercimek-corbasi-tarifi.jpg";
-                profileDto.Description = "veritabanýnaeklenecek";
+                profileDto.Description = "Veritabanýna Eklenecek";
                 profileDto.FullName = kullanici.NameSurName.Trim();
                 profileDto.FollowerCount = followersCount;
                 profileDto.PostCount = posts.Count;
@@ -250,7 +211,37 @@ namespace Chefbook.API.Controllers
           return Ok(walluser);
         }
 
+        //[HttpGet("changepassword")]
+        //public IActionResult ChangePassword()
+        //{
+        //    return 
+        //}
 
+        [HttpPost("changepasspost")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel changePasswordViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+                    var response = await _userService.ChangePassword(changePasswordViewModel,Guid.Parse(currentUserId));
+                    if (response)
+                    {
+                        return Ok("Þifre Deðiþtirildi.");
+                    }
+                    ModelState.AddModelError("ChangePasswordError","Þifre Deðiþtirilemedi.");
+                    return BadRequest(ModelState);
+                }
+                catch (Exception x)
+                {
+                    ModelState.AddModelError("ChangePasswordError", x.ToString()); // TODO: Replace x with your error message
+                    return BadRequest(ModelState);
+                }
+            }
+
+            return BadRequest("Þifreler Farklý");
+        }
 
 
         //
