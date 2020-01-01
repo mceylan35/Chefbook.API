@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Chefbook.API.Context;
+using Chefbook.API.Helpers;
 using Chefbook.API.Models;
 using Chefbook.API.Repository;
 using Chefbook.API.Services.Interface;
@@ -14,12 +15,16 @@ using Chefbook.API.Services.RepositoryServices;
 using Chefbook.Model;
 using Chefbook.Model.DTO;
 using Chefbook.Model.Models;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 
@@ -35,15 +40,18 @@ namespace Chefbook.API.Controllers
         private IFollowService _followService;
         private IPostService _postService;
         private IImageService _imageService;
-
-
-        public UserController(IUserService userService, IConfiguration configuration, IFollowService followService, IPostService postService, IImageService imageService)
+        private IOptions<CloudinarySettings> _cloudinaryConfig;
+        private Cloudinary _cloudinary;
+        public UserController(IUserService userService, IConfiguration configuration, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
         {
             _userService = userService;
             _configuration = configuration;
             _followService = followService;
             _postService = postService;
             _imageService = imageService;
+            _cloudinaryConfig = cloudinaryConfig;
+            Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey, _cloudinaryConfig.Value.ApiSecret);
+            _cloudinary = new Cloudinary(account);
         }
 
         [HttpPost]
@@ -211,13 +219,96 @@ namespace Chefbook.API.Controllers
           return Ok(walluser);
         }
 
-        //[HttpGet("changepassword")]
-        //public IActionResult ChangePassword()
-        //{
-        //    return 
-        //}
+        [HttpPut]
+        [Route("coverupdate")]
+        public IActionResult CoverUpdate([FromForm]IFormFile model)
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-        [HttpPost("changepasspost")]
+        
+            
+
+                var uploadResult = new ImageUploadResult();
+                if (model.Length > 0)
+                {
+                    using (var stream = model.OpenReadStream())
+                    {
+
+                        var uploadParams = new ImageUploadParams
+                        {
+                            File = new FileDescription(model.Name, stream),
+
+
+                        };
+
+
+                    }
+
+                    var user = _userService.GetById(Guid.Parse(currentUserId));
+                    user.CoverImage = uploadResult.Uri.ToString();
+                    _userService.Update(user);
+                    return Ok("Cover Güncellendi.");
+                }
+                else
+                {
+                    return BadRequest("Ýþlem Baþarýsýz.");
+                }
+
+
+
+
+
+               
+
+
+
+            
+        }
+
+        [HttpPut]
+        [Route("profileimageupdate")]
+        public IActionResult ProfileImageUpdate([FromForm]IFormFile model)
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+
+
+
+            var uploadResult = new ImageUploadResult();
+            if (model.Length > 0)
+            {
+                using (var stream = model.OpenReadStream())
+                {
+
+                    var uploadParams = new ImageUploadParams
+                    {
+                        File = new FileDescription(model.Name, stream),
+
+
+                    };
+
+
+                }
+
+                var user = _userService.GetById(Guid.Parse(currentUserId));
+                user.ProfileImage = uploadResult.Uri.ToString();
+                _userService.Update(user);
+                return Ok("Cover Güncellendi.");
+            }
+            else
+            {
+                return BadRequest("Ýþlem Baþarýsýz.");
+            }
+
+
+
+
+
+
+        }
+
+        [HttpPost("changepassword")]
+        [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel changePasswordViewModel)
         {
             if (ModelState.IsValid)
@@ -242,6 +333,55 @@ namespace Chefbook.API.Controllers
 
             return BadRequest("Þifreler Farklý");
         }
+
+
+
+
+
+
+        [HttpGet("changeprofileget")]
+        [Authorize]
+        public IActionResult ChangeProfileGet()
+        {
+            
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+                var user = _userService.GetById(Guid.Parse(currentUserId));
+                if (user!=null)
+                {
+               
+                 return Ok(new ChangeInformationProfileViewModel
+                {
+                    NameSurName = user.NameSurName,
+                    Mail = user.Mail,
+                    UserName = user.UserName
+                });
+
+                }
+
+                return BadRequest("Bir hata oluþtu.");
+        }
+
+        [HttpPost("changeprofile")]
+        [Authorize]
+        public  IActionResult ChangeProfile(ChangeInformationProfileViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+                var user = _userService.GetById(Guid.Parse(currentUserId));
+                user.Mail = model.Mail;
+                user.NameSurName = model.NameSurName;
+                user.UserName = model.UserName;
+                _userService.Update(user);
+                return Ok("Güncelleme Baþarýlý");
+
+
+            }
+
+            return BadRequest("Bir hata oluþtu.");
+        }
+
+
 
 
         //

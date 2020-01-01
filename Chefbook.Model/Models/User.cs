@@ -25,6 +25,8 @@ namespace Chefbook.Model.Models
         public byte[] PasswordSalt { get; set; }
         public DateTime? RegisterDate { get; set; }
         public string UserName { get; set; }
+        public string ProfileImage { get; set; }
+        public string CoverImage { get; set; }
 
         public virtual ICollection<Comment> Comment { get; set; }
         public virtual ICollection<Follow> FollowFollowers { get; set; }

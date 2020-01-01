@@ -54,9 +54,7 @@ namespace Chefbook.API.Controllers
         {
             try
             {
-               // _postService.BeginTransaction();
-               // _imageService.BeginTransaction();
-               // _stepService.BeginTransaction();
+             
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
                 Guid guid = Guid.NewGuid();
@@ -97,10 +95,9 @@ namespace Chefbook.API.Controllers
 
 
                 }
-
-
-
+                
                 _imageService.AddRange(images);
+
                 if (model.Steps != null)
                 {
                     List<Step> steps = new List<Step>();
@@ -118,17 +115,12 @@ namespace Chefbook.API.Controllers
                 _postService.Add(new Post { Id = guid, Description = model.Description, UserId = Guid.Parse(currentUserId), PostDate = DateTime.Now, LikeCount = 0,Title = model.Title});
 
 
-                //_postService.CommitTransaction();
-               // _imageService.CommitTransaction();
-               // _stepService.CommitTransaction();
 
                 return Ok("Success");
             }
             catch (Exception e)
             {
-               // _postService.RollbackTransaction();
-                //_imageService.RollbackTransaction();
-               // _stepService.RollbackTransaction();
+              
                 return BadRequest(e);
             }
           
