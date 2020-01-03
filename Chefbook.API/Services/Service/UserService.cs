@@ -54,11 +54,23 @@ namespace Chefbook.API.Services.RepositoryServices
                 return user;
             }
         }
-        public async Task<bool> UserExists(string email)
+        public async Task<bool> UserExists(string username)
         {
             using (var _context = new ChefContext())
             {
-                if (await _context.User.AllAsync(x => x.Mail == email))
+                if (await _context.User.AllAsync(x => x.UserName == username))
+                {
+                    return true;
+                }
+                return false;
+            }
+
+        }
+        public async Task<bool> MailExists(string mail)
+        {
+            using (var _context = new ChefContext())
+            {
+                if (await _context.User.AllAsync(x => x.Mail == mail))
                 {
                     return true;
                 }
@@ -67,27 +79,54 @@ namespace Chefbook.API.Services.RepositoryServices
 
         }
 
-        public List<User> Users(string user)
+        public List<SearchUserModel> Users(string user)
         {
             using (var context= new ChefContext())
             {
-                return context.User.Where(i=>i.UserName.Contains(user)).ToList();
+               
+                var arama= context.User.Where(i => i.UserName.Contains(user)).Select(i => new SearchUserModel()
+                {
+                    NameSurName = i.NameSurName,
+                    ProfileImage = i.ProfileImage,
+                    UserName = i.UserName
+
+                });
+                return arama.ToList();
             }
         }
 
-        public List<Post> Wall(Guid userId)
+        public List<WallPostViewModel> Wall(Guid userId)
         {
             using (var context=new ChefContext())
             {
-                
-        
-              var outputList = from p in context.Post
+                // orderby p.PostDate descending
+                // 
+                  var outputList = from p in context.Post
                   join u in context.User on p.UserId equals u.Id
-                  join f in context.Follow on u.Id equals f.FollowingId 
-                orderby p.PostDate descending
-                  where p.UserId==f.FollowersId
-                select p;
-              return outputList.ToList();
+                  join s in context.Star on p.Id equals s.PostId
+                  //group s by s.PostId into playerGroup
+               
+                select new WallPostViewModel
+                {
+                    StarId = p.Id,
+                    NameSurName = u.NameSurName,
+                    Description = u.Description,
+                    LikeCount = p.LikeCount,
+                    PostDate = p.PostDate,
+                    ProfileImage = u.ProfileImage,
+                    Title = p.Title,
+                    UserName = u.UserName,
+                    StarNumber = p.RateSum
+
+                 };
+                  foreach (var model in outputList)
+                  {
+                    
+                      model.StarNumber = model.StarNumber/ context.Star.Count(i => i.Id == model.StarId);
+
+                  }
+
+                return outputList.ToList();
             }
 
             

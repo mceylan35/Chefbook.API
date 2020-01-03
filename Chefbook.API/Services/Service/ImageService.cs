@@ -41,11 +41,9 @@ namespace Chefbook.API.Services.Service
                         PictureUrl = i.ImageUrls,
                         RateNumber = "2",
                         Title = p.Title,
-                        LikeCount = p.LikeCount.ToString(),
+                        LikeCount = p.LikeCount.ToString()
 
                     });
-
-               // var osman=context.Database.ExecuteSqlCommand("")
                 return findImages.ToList();
             }
         }

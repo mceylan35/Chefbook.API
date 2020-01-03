@@ -19,9 +19,7 @@ namespace Chefbook.API.Services.Service
                 
                 if (Exists(postId))
                 {
-
-
-                    var like = context.Post.Find(postId);
+                 var like = context.Post.Find(postId);
 
                 like.LikeCount = like.LikeCount + 1;
                 context.SaveChanges();

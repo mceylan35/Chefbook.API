@@ -18,9 +18,7 @@ namespace Chefbook.API.Models
         [StringLength(255, ErrorMessage = "Password En az 6 en fazla 16 karakter", MinimumLength = 6)]
         [DataType(DataType.Password)]
         public string Password { get; set; }
-
-
-
+        
         [Required(ErrorMessage = "Password Zorunlu")]
         [StringLength(255, ErrorMessage = "Password En az 6 en fazla 16 karakter", MinimumLength = 6)]
         [DataType(DataType.Password)]

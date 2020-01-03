@@ -27,6 +27,7 @@ namespace Chefbook.Model.Models
         public string UserName { get; set; }
         public string ProfileImage { get; set; }
         public string CoverImage { get; set; }
+        public string Description { get; set; }
 
         public virtual ICollection<Comment> Comment { get; set; }
         public virtual ICollection<Follow> FollowFollowers { get; set; }

@@ -20,6 +20,8 @@ namespace Chefbook.Model.Models
         public string Description { get; set; }
         public long? LikeCount { get; set; }
         public string Title { get; set; }
+        public long RateSum { get; set; }
+        
 
         public virtual User User { get; set; }
         public virtual ICollection<Like> Like { get; set; }

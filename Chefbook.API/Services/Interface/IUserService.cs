@@ -16,7 +16,8 @@ namespace Chefbook.API.Services.RepositoryInterfaces
         Task<bool> UserExists(string userName);
         Task<bool> ChangePassword(ChangePasswordViewModel model, Guid userId);
         bool Exists(Guid postId);
-        List<User> Users(string user);
-        List<Post> Wall(Guid userId);
+        List<SearchUserModel> Users(string user);
+        List<WallPostViewModel> Wall(Guid userId);
+        Task<bool> MailExists(string mail);
     }
 }

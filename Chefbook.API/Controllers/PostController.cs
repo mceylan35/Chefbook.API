@@ -30,31 +30,39 @@ namespace Chefbook.API.Controllers
         private IImageService _imageService;
         private ILikeService _likeService;
         private IOptions<CloudinarySettings> _cloudinaryConfig;
+        private IStarService _starService;
+
 
         private Cloudinary _cloudinary;
-        public PostController(IPostService postService, IStepService stepService, IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig)
+
+        public PostController(IStarService starService, IPostService postService, IStepService stepService,
+            IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig)
         {
             _postService = postService;
             _stepService = stepService;
             _imageService = imageService;
             _likeService = likeService;
+            _starService = starService;
             _cloudinaryConfig = cloudinaryConfig;
-            Account account=new Account(_cloudinaryConfig.Value.CloudName,_cloudinaryConfig.Value.ApiKey,_cloudinaryConfig.Value.ApiSecret);
-            _cloudinary=new Cloudinary(account);
-           
+            Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey,
+                _cloudinaryConfig.Value.ApiSecret);
+            _cloudinary = new Cloudinary(account);
+
 
         }
-     
 
-        
+
+
 
         [HttpPost]
         [Route("add")]
-        public  IActionResult Add([FromForm]PostDTO model)
+        public IActionResult Add([FromForm] PostDTO model)
         {
             try
             {
-             
+                // _postService.BeginTransaction();
+                // _imageService.BeginTransaction();
+                // _stepService.BeginTransaction();
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
                 Guid guid = Guid.NewGuid();
@@ -65,6 +73,7 @@ namespace Chefbook.API.Controllers
                 {
                     return BadRequest();
                 }
+
                 var images = new List<Image>();
 
                 foreach (var file in model.Photos)
@@ -76,55 +85,71 @@ namespace Chefbook.API.Controllers
                     {
                         using (var stream = file.OpenReadStream())
                         {
-                            
+
                             var uploadParams = new ImageUploadParams
                             {
                                 File = new FileDescription(file.Name, stream),
-                               
+
 
                             };
+                            uploadResult = _cloudinary.Upload(uploadParams);
 
-                          
                         }
                     }
-                
 
 
-                    images.Add(new Image { Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid, PublicId = uploadResult.PublicId });
+
+                    images.Add(new Image
+                    {
+                        Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid,
+                        PublicId = uploadResult.PublicId
+                    });
 
 
 
                 }
-                
-                _imageService.AddRange(images);
 
+
+
+                _imageService.AddRange(images);
                 if (model.Steps != null)
                 {
                     List<Step> steps = new List<Step>();
                     foreach (var step in model.Steps)
                     {
-                        steps.Add(new Step { Id = Guid.NewGuid(), PostId = guid, Description = step.Description });
+                        steps.Add(new Step {Id = Guid.NewGuid(), PostId = guid, Description = step.Description});
 
                     }
+
                     _stepService.AddRange(steps);
                 }
 
 
 
 
-                _postService.Add(new Post { Id = guid, Description = model.Description, UserId = Guid.Parse(currentUserId), PostDate = DateTime.Now, LikeCount = 0,Title = model.Title});
+                _postService.Add(new Post
+                {
+                    Id = guid, Description = model.Description, UserId = Guid.Parse(currentUserId),
+                    PostDate = DateTime.Now, LikeCount = 0, Title = model.Title,RateSum = 0
+                });
 
 
+                //_postService.CommitTransaction();
+                // _imageService.CommitTransaction();
+                // _stepService.CommitTransaction();
 
                 return Ok("Success");
             }
             catch (Exception e)
             {
-              
+                // _postService.RollbackTransaction();
+                //_imageService.RollbackTransaction();
+                // _stepService.RollbackTransaction();
                 return BadRequest(e);
             }
-          
+
         }
+
         [HttpGet]
         [Route("delete/{postId}")]
         public IActionResult DeletePost(Guid postId)
@@ -132,7 +157,7 @@ namespace Chefbook.API.Controllers
             try
             {
                 var deletingpost = _postService.GetById(postId);
-                if (deletingpost!=null)
+                if (deletingpost != null)
                 {
                     _postService.Delete(deletingpost);
                     return Ok("success");
@@ -146,6 +171,7 @@ namespace Chefbook.API.Controllers
                 return BadRequest(e);
             }
         }
+
         [HttpGet]
         [Route("like/{postId}")]
         public IActionResult LikePost(Guid postId)
@@ -154,7 +180,7 @@ namespace Chefbook.API.Controllers
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-                if (_postService.Like(postId) && !_likeService.BegendinMi(Guid.Parse(currentUserId),postId))
+                if (_postService.Like(postId) && !_likeService.BegendinMi(Guid.Parse(currentUserId), postId))
                 {
                     _likeService.Add(new Like
                     {
@@ -173,9 +199,10 @@ namespace Chefbook.API.Controllers
             {
                 return BadRequest(e);
             }
-                  
-                
+
+
         }
+
         [HttpGet]
         [Route("dislike/{postId}")]
         public IActionResult DisLikePost(Guid postId)
@@ -204,9 +231,38 @@ namespace Chefbook.API.Controllers
                 return BadRequest(e);
             }
 
-               
-           
+
+
         }
 
+        [HttpPost]
+        [Route("starAdd")]
+        public IActionResult StarAdd(StarDto model)
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+            var star = _starService.Get(i => i.UserId == Guid.Parse(currentUserId) && i.PostId == model.PostId);
+
+            if (star==null)
+            {
+                _starService.Add(new Star
+                {
+                    Id = new Guid(),
+                    PostId = model.PostId,
+                    RateNumber = model.RateNumber,
+                    UserId = Guid.Parse(currentUserId)
+                });
+                return StatusCode(200, "Star Başarılı");
+            }
+            else
+            {
+                star.RateNumber = model.RateNumber;
+                _starService.Update(star);
+
+                return StatusCode(201, "Star Güncellendi."); ;
+            }
+           
+            
+        }
     }
 }

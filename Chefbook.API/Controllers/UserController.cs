@@ -62,7 +62,7 @@ namespace Chefbook.API.Controllers
             {
                 return BadRequest(ModelState);
             }
-            if (await _userService.UserExists(user.Mail))
+            if (await _userService.UserExists(user.UserName))
             {
                 ModelState.AddModelError("Mail", "Mail already exists");
             }
@@ -74,8 +74,8 @@ namespace Chefbook.API.Controllers
                     NameSurName = user.NameSurName,
                     RegisterDate = DateTime.Now,
                     UserName = user.UserName,
-                  //  Birthday = user.Birthday,
-                   // Gender = user.Gender,
+                    //  Birthday = user.Birthday,
+                    // Gender = user.Gender,
                     Id = Guid.NewGuid(),
                 };
                 var createdUser = await _userService.Register(userToCreate, user.Password);
@@ -88,7 +88,7 @@ namespace Chefbook.API.Controllers
                 throw;
             }
 
-           
+
         }
         [HttpPost]
         [Route("login")]
@@ -155,7 +155,7 @@ namespace Chefbook.API.Controllers
             try
             {
                 var kullanicilar = _userService.Users(q);
-                if (kullanicilar!=null)
+                if (kullanicilar != null)
                 {
                     return Ok(kullanicilar);
                 }
@@ -179,28 +179,28 @@ namespace Chefbook.API.Controllers
                 var kullanici = _userService.GetById(Guid.Parse(currentUserId));
                 long followersCount = _followService.GetFollowersCount(Guid.Parse(currentUserId));
                 long following = _followService.GetFollowingCount(Guid.Parse(currentUserId));
-                
+
 
                 var posts = _postService.GetAll(i => i.UserId == Guid.Parse(currentUserId));
 
-             
+
                 ProfileDto profileDto = new ProfileDto();
 
                 profileDto.UserName = kullanici.UserName.Trim();
-                profileDto.Cover= "https://i.nefisyemektarifleri.com/2018/05/04/mercimek-corbasi-tarifi.jpg";
-                profileDto.Description = "Veritabanýna Eklenecek";
+                profileDto.Cover = kullanici.CoverImage;
+                profileDto.Description = kullanici.Description;
                 profileDto.FullName = kullanici.NameSurName.Trim();
                 profileDto.FollowerCount = followersCount;
                 profileDto.PostCount = posts.Count;
-                profileDto.ProfilePicture= "https://i.nefisyemektarifleri.com/2018/05/04/mercimek-corbasi-tarifi.jpg";
+                profileDto.ProfilePicture = kullanici.ProfileImage;
                 profileDto.ProfilePosts = _imageService.FindImage(Guid.Parse(currentUserId));
 
-                
-                    return Ok(profileDto);
-                    //Sayfaya göre deðiþecek.
-                
 
-               // return NotFound("Kullanýcý Bulunamadý!");
+                return Ok(profileDto);
+                //Sayfaya göre deðiþecek.
+
+
+                // return NotFound("Kullanýcý Bulunamadý!");
             }
             catch (Exception e)
             {
@@ -215,8 +215,8 @@ namespace Chefbook.API.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             var walluser = _userService.Wall(Guid.Parse(currentUserId));
-            
-          return Ok(walluser);
+
+            return Ok(walluser);
         }
 
         [HttpPut]
@@ -225,44 +225,41 @@ namespace Chefbook.API.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-        
-            
-
-                var uploadResult = new ImageUploadResult();
-                if (model.Length > 0)
+            var uploadResult = new ImageUploadResult();
+            if (model.Length > 0)
+            {
+                using (var stream = model.OpenReadStream())
                 {
-                    using (var stream = model.OpenReadStream())
+
+                    var uploadParams = new ImageUploadParams
                     {
-
-                        var uploadParams = new ImageUploadParams
-                        {
-                            File = new FileDescription(model.Name, stream),
+                        File = new FileDescription(model.Name, stream),
 
 
-                        };
+                    };
+                    uploadResult = _cloudinary.Upload(uploadParams);
 
-
-                    }
-
-                    var user = _userService.GetById(Guid.Parse(currentUserId));
-                    user.CoverImage = uploadResult.Uri.ToString();
-                    _userService.Update(user);
-                    return Ok("Cover Güncellendi.");
-                }
-                else
-                {
-                    return BadRequest("Ýþlem Baþarýsýz.");
                 }
 
+                var user = _userService.GetById(Guid.Parse(currentUserId));
+                user.CoverImage = uploadResult.Uri.ToString();
+                _userService.Update(user);
+                return StatusCode(200, "Cover Güncellendi.");
+            }
+            else
+            {
+                return StatusCode(301, "Resim Yok");
+            }
 
 
 
 
-               
 
 
 
-            
+
+
+
         }
 
         [HttpPut]
@@ -286,18 +283,18 @@ namespace Chefbook.API.Controllers
 
 
                     };
-
+                    uploadResult = _cloudinary.Upload(uploadParams);
 
                 }
 
                 var user = _userService.GetById(Guid.Parse(currentUserId));
                 user.ProfileImage = uploadResult.Uri.ToString();
                 _userService.Update(user);
-                return Ok("Cover Güncellendi.");
+                return StatusCode(200, "Resim Güncellendi.");
             }
             else
             {
-                return BadRequest("Ýþlem Baþarýsýz.");
+                return StatusCode(301, "Resim Yok.");
             }
 
 
@@ -316,22 +313,24 @@ namespace Chefbook.API.Controllers
                 try
                 {
                     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-                    var response = await _userService.ChangePassword(changePasswordViewModel,Guid.Parse(currentUserId));
+                    var response = await _userService.ChangePassword(changePasswordViewModel, Guid.Parse(currentUserId));
                     if (response)
                     {
-                        return Ok("Þifre Deðiþtirildi.");
+                        return StatusCode(200, "Þifre Deðiþtirildi.");
                     }
-                    ModelState.AddModelError("ChangePasswordError","Þifre Deðiþtirilemedi.");
+                    // ModelState.AddModelError("ChangePasswordError","Þifre Deðiþtirilemedi.");
+                    return StatusCode(301, "Eski Þifre Yanlýþ");
                     return BadRequest(ModelState);
                 }
                 catch (Exception x)
                 {
                     ModelState.AddModelError("ChangePasswordError", x.ToString()); // TODO: Replace x with your error message
-                    return BadRequest(ModelState);
+                    return StatusCode(302, "Þifreler ayný deðil.");
                 }
             }
 
-            return BadRequest("Þifreler Farklý");
+            return StatusCode(302, "Bir hata  oluþtu.");
+
         }
 
 
@@ -339,114 +338,96 @@ namespace Chefbook.API.Controllers
 
 
 
-        [HttpGet("changeprofileget")]
+        [HttpGet("getprofiledetails")]
         [Authorize]
         public IActionResult ChangeProfileGet()
         {
-            
-                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-                var user = _userService.GetById(Guid.Parse(currentUserId));
-                if (user!=null)
-                {
-               
-                 return Ok(new ChangeInformationProfileViewModel
+
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var user = _userService.GetById(Guid.Parse(currentUserId));
+            if (user != null)
+            {
+
+                return StatusCode(200, new ChangeInformationProfileViewModel
                 {
                     NameSurName = user.NameSurName,
                     Mail = user.Mail,
-                    UserName = user.UserName
+                    UserName = user.UserName,
+                    Biography = user.Description
                 });
 
-                }
 
-                return BadRequest("Bir hata oluþtu.");
+            }
+            return StatusCode(301, "hata Oluþtu");
+            //return BadRequest("Bir hata oluþtu.");
         }
 
         [HttpPost("changeprofile")]
         [Authorize]
-        public  IActionResult ChangeProfile(ChangeInformationProfileViewModel model)
+        public IActionResult ChangeProfile(ChangeInformationProfileViewModel model)
         {
+
+
             if (ModelState.IsValid)
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 var user = _userService.GetById(Guid.Parse(currentUserId));
-                user.Mail = model.Mail;
-                user.NameSurName = model.NameSurName;
-                user.UserName = model.UserName;
-                _userService.Update(user);
-                return Ok("Güncelleme Baþarýlý");
 
+                if (user.UserName != model.UserName || user.Mail != model.Mail || user.NameSurName != model.NameSurName || user.Description != model.Biography)
+                {
+
+
+
+
+                    if (user.UserName != model.UserName)
+                    {
+                        var isExistingUserName = _userService.UserExists(model.UserName);
+
+                        if (isExistingUserName.Result)
+                        {
+                            return StatusCode(301, "Böyle bir UserName var.");
+                        }
+                        else
+                        {
+                            user.UserName = model.UserName;
+                        }
+                    }
+
+                    if (user.Mail != model.Mail)
+                    {
+                        var isExistingMail = _userService.MailExists(model.Mail);
+
+                        if (isExistingMail.Result)
+                        {
+                            return StatusCode(302, "Böyle bir Mail var.");
+                        }
+                        else
+                        {
+                            user.Mail = model.Mail;
+                        }
+                    }
+
+                    if (user.Description != model.Biography)
+                        user.Description = model.Biography;
+                    if (user.NameSurName != model.NameSurName)
+                        user.NameSurName = model.NameSurName;
+                    _userService.Update(user);
+
+                    return StatusCode(200, "Bilgiler Güncellendi.");
+
+                }
+                else
+                {
+                    return StatusCode(304, "Bilgiler Güncellenmedi.");
+                }
+               
 
             }
-
-            return BadRequest("Bir hata oluþtu.");
+            return BadRequest("Hata oluþtu");
         }
 
 
 
-
-        //
-        // POST: /Account/ForgotPassword
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = _userService.Get(i=>i.Mail==model.Email);
-                //if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
-                //{
-               
-                //    return Ok();
-                //}
-
-              
-                //var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-                //var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, protocol: HttpContext.Request.Scheme);
-                //await _emailSender.SendEmailAsync(model.Email, "Reset Password",
-                //   $"Please reset your password by clicking here: <a href='{callbackUrl}'>link</a>");
-                //return View("ForgotPasswordConfirmation");
-            }
-
-            // If we got this far, something failed, redisplay form
-            return Ok();
-        }
-
-
-        // //
-        // // GET: /Account/ResetPassword
-        // [HttpGet]
-        // [AllowAnonymous]
-        // public IActionResult ResetPassword(string code = null)
-        // {
-        //     return code == null ? View("Error") : View();
-        // }
-
-
-
-       // [HttpPost]
-       //[AllowAnonymous]
-       //[ValidateAntiForgeryToken]
-       // public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
-       // {
-       //     if (!ModelState.IsValid)
-       //     {
-       //         return Ok();
-       //     }
-       //     var user = _userService.Get(i => i.Mail == model.Email);
-       //     if (user == null)
-       //     {
-               
-       //        // return RedirectToAction(nameof(AccountController.ResetPasswordConfirmation), "Account");
-       //     }
-       //     var result = await _userManager.ResetPasswordAsync(user, model.Code, model.Password);
-       //     if (result.Succeeded)
-       //     {
-       //         return RedirectToAction(nameof(AccountController.ResetPasswordConfirmation), "Account");
-       //     }
-       //     AddErrors(result);
-       //     return View();
-       // }
 
 
     }
