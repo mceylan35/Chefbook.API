@@ -10,7 +10,6 @@ namespace Chefbook.Model.Models
         public Post()
         {
             Like = new HashSet<Like>();
-            Step = new HashSet<Step>();
             Sticker = new HashSet<Sticker>();
         }
 
@@ -20,12 +19,10 @@ namespace Chefbook.Model.Models
         public string Description { get; set; }
         public long? LikeCount { get; set; }
         public string Title { get; set; }
-        public long RateSum { get; set; }
-        
+        public long? RateSum { get; set; }
 
         public virtual User User { get; set; }
         public virtual ICollection<Like> Like { get; set; }
-        public virtual ICollection<Step> Step { get; set; }
         public virtual ICollection<Sticker> Sticker { get; set; }
     }
 }

@@ -56,6 +56,7 @@ namespace Chefbook.API
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IStickerService, StickerService>();
             services.AddScoped<IStepService,StepService>();
+            services.AddScoped<IStarService, StarService>();
             services.AddSignalR();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
            {

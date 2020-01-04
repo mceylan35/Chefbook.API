@@ -32,12 +32,13 @@ namespace Chefbook.API.Context
         public virtual DbSet<Like> Like { get; set; }
         public virtual DbSet<Notification> Notification { get; set; }
         public virtual DbSet<Post> Post { get; set; }
+        public virtual DbSet<Star> Star { get; set; }
         public virtual DbSet<Step> Step { get; set; }
         public virtual DbSet<Sticker> Sticker { get; set; }
         public virtual DbSet<User> User { get; set; }
-        public virtual DbSet<Star> Star { get; set; }
 
-     
+      
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasAnnotation("ProductVersion", "2.2.0-rtm-35687");
@@ -108,9 +109,9 @@ namespace Chefbook.API.Context
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
-                entity.Property(e => e.Description).HasMaxLength(150);
-
                 entity.Property(e => e.PostDate).HasColumnType("datetime");
+
+                entity.Property(e => e.Title).HasMaxLength(160);
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.Post)
@@ -119,16 +120,16 @@ namespace Chefbook.API.Context
                     .HasConstraintName("FK_Post_User1");
             });
 
+            modelBuilder.Entity<Star>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+
             modelBuilder.Entity<Step>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
                 entity.Property(e => e.Description).HasMaxLength(100);
-
-                entity.HasOne(d => d.Post)
-                    .WithMany(p => p.Step)
-                    .HasForeignKey(d => d.PostId)
-                    .HasConstraintName("FK_Step_Post");
             });
 
             modelBuilder.Entity<Sticker>(entity =>
@@ -148,6 +149,8 @@ namespace Chefbook.API.Context
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
                 entity.Property(e => e.Birthday).HasColumnType("date");
+
+                entity.Property(e => e.NameSurName).HasMaxLength(75);
 
                 entity.Property(e => e.RegisterDate).HasColumnType("datetime");
 

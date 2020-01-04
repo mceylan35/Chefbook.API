@@ -40,9 +40,10 @@ namespace Chefbook.API.Controllers
         private IFollowService _followService;
         private IPostService _postService;
         private IImageService _imageService;
+        private IStarService _starService;
         private IOptions<CloudinarySettings> _cloudinaryConfig;
         private Cloudinary _cloudinary;
-        public UserController(IUserService userService, IConfiguration configuration, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
+        public UserController(IUserService userService, IConfiguration configuration, IStarService starService, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
         {
             _userService = userService;
             _configuration = configuration;
@@ -50,6 +51,8 @@ namespace Chefbook.API.Controllers
             _postService = postService;
             _imageService = imageService;
             _cloudinaryConfig = cloudinaryConfig;
+            _starService = starService;
+
             Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey, _cloudinaryConfig.Value.ApiSecret);
             _cloudinary = new Cloudinary(account);
         }
@@ -215,7 +218,12 @@ namespace Chefbook.API.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             var walluser = _userService.Wall(Guid.Parse(currentUserId));
+            foreach (var model in walluser)
+            {
 
+                model.StarNumber = model.StarNumber / _starService.GetAll().Count(i => i.Id == model.StarId);
+
+            }
             return Ok(walluser);
         }
 
@@ -320,7 +328,7 @@ namespace Chefbook.API.Controllers
                     }
                     // ModelState.AddModelError("ChangePasswordError","Þifre Deðiþtirilemedi.");
                     return StatusCode(301, "Eski Þifre Yanlýþ");
-                    return BadRequest(ModelState);
+                  
                 }
                 catch (Exception x)
                 {

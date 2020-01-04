@@ -99,32 +99,29 @@ namespace Chefbook.API.Services.RepositoryServices
         {
             using (var context=new ChefContext())
             {
-                // orderby p.PostDate descending
-                // 
-                  var outputList = from p in context.Post
-                  join u in context.User on p.UserId equals u.Id
-                  join s in context.Star on p.Id equals s.PostId
-                  //group s by s.PostId into playerGroup
-               
-                select new WallPostViewModel
-                {
-                    StarId = p.Id,
-                    NameSurName = u.NameSurName,
-                    Description = u.Description,
-                    LikeCount = p.LikeCount,
-                    PostDate = p.PostDate,
-                    ProfileImage = u.ProfileImage,
-                    Title = p.Title,
-                    UserName = u.UserName,
-                    StarNumber = p.RateSum
 
-                 };
-                  foreach (var model in outputList)
-                  {
-                    
-                      model.StarNumber = model.StarNumber/ context.Star.Count(i => i.Id == model.StarId);
+                var user = GetById(userId);
 
-                  }
+               // var wall = context.Database.ExecuteSqlCommand("Wall @p0", userId );
+                var outputList = from p in context.Post
+                                 join u in context.User on p.UserId equals u.Id
+                                 join s in context.Star on p.Id equals s.PostId
+                                 
+
+                                 select new WallPostViewModel
+                                 {
+                                     StarId = p.Id,
+                                     NameSurName = u.NameSurName,
+                                     Description = u.Description,
+                                     LikeCount = p.LikeCount,
+                                     PostDate = p.PostDate,
+                                     ProfileImage = u.ProfileImage,
+                                     Title = p.Title,
+                                     UserName = u.UserName,
+                                    // StarNumber = p.RateSum
+
+                                 };
+
 
                 return outputList.ToList();
             }
