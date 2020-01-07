@@ -22,36 +22,39 @@ namespace Chefbook.API.SignalR.Concrete
 
         public override async Task OnConnectedAsync()
         {
-            var currentUserId = Context.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+          //  var currentUserId = Context.User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-            using (var context = new ChefContext())
-            {
-                var connection = context.Connection.FirstOrDefault(i=>i.UserId==Guid.Parse(currentUserId));
-                if (connection != null)
-                {
-                    connection.ConnectionId = Context.ConnectionId;
-                    connection.Connected = true;
+          using (var context = new ChefContext())
+          {
+              var connection =
+                  context.Connection.FirstOrDefault(i =>
+                      i.UserId == Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"));
+              if (connection != null)
+              {
+                  connection.ConnectionId = Context.ConnectionId;
+                  connection.Connected = true;
 
-                }
-                else
-                {
-                    context.Connection.Add(new Connection
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = Guid.Parse(currentUserId),
-                        ConnectionId = Context.ConnectionId
-                    });
-                    context.SaveChanges();
-                }
+              }
+              else
+              {
+                  context.Connection.Add(new Connection
+                  {
+                      Id = Guid.NewGuid(),
+                      UserId = Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"),
+                      ConnectionId = Context.ConnectionId
+                  });
+                
+              }
+              context.SaveChanges();
 
 
-               
-            }
 
-            await Clients.Caller.SendAsync("GetConnectionId", this.Context.ConnectionId); //Client tarafına ConnectionId yolladım
 
-            // await base.OnConnectedAsync();
+                await Clients.Caller.SendAsync("GetConnectionId",
+                  this.Context.ConnectionId); //Client tarafına ConnectionId yolladım
 
+              await base.OnConnectedAsync();
+          }
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
@@ -81,6 +84,10 @@ namespace Chefbook.API.SignalR.Concrete
                     return Clients.All.SendAsync("NotificationGuncelle");
                 }
             }
+        }
+        public string GetConnectionId()
+        {
+            return Context.ConnectionId;
         }
         // public override async Task OnConnectedAsync()
         // {

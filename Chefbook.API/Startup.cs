@@ -117,7 +117,7 @@ namespace Chefbook.API
            // app.UseSignalR(routes => { routes.MapHub<NotificationHub>("/notificationhub"); });
 
             app.UseSignalR(route => {
-                route.MapHub<NotificationHub>("/notificationhub");
+                route.MapHub<NotificationHub>("/notificationhubs");
             });
 
             app.UseAuthentication();
