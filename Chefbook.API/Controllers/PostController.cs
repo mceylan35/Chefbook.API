@@ -130,7 +130,7 @@ namespace Chefbook.API.Controllers
                 _postService.Add(new Post
                 {
                     Id = guid, Description = model.Description, UserId = Guid.Parse(currentUserId),
-                    PostDate = DateTime.Now, LikeCount = 0, Title = model.Title,RateSum = 0
+                    PostDate = DateTime.Now, LikeCount = 0, Title = model.Title,StarGivenUserCount = 0,SumStar = 0,Star = 0
                 });
 
 
@@ -243,8 +243,14 @@ namespace Chefbook.API.Controllers
 
             var star = _starService.Get(i => i.UserId == Guid.Parse(currentUserId) && i.PostId == model.PostId);
 
+            var post = _postService.GetById(model.PostId);
             if (star==null)
             {
+               
+                post.StarGivenUserCount += 1;
+                post.SumStar += model.RateNumber;
+                post.Star = post.SumStar / post.StarGivenUserCount;
+                _postService.Update(post);
                 _starService.Add(new Star
                 {
                     Id = new Guid(),
@@ -256,6 +262,11 @@ namespace Chefbook.API.Controllers
             }
             else
             {
+                
+                
+                post.SumStar += model.RateNumber-star.RateNumber;
+                post.Star = post.SumStar / post.StarGivenUserCount;
+                _postService.Update(post);
                 star.RateNumber = model.RateNumber;
                 _starService.Update(star);
 

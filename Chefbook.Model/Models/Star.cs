@@ -9,7 +9,7 @@ namespace Chefbook.Model.Models
         public Guid Id { get; set; }
         public Guid? UserId { get; set; }
         public Guid? PostId { get; set; }
-        public byte? RateNumber { get; set; }
+        public double RateNumber { get; set; }
 
     }
 }

@@ -8,7 +8,7 @@ namespace Chefbook.API.Models
     public class StarDto
     {
         public Guid PostId { get; set; }
-        public byte RateNumber { get; set; }
+        public double RateNumber { get; set; }
        
     }
 }

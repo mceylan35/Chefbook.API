@@ -11,6 +11,8 @@ using Chefbook.API.Services.Interface;
 using Chefbook.API.Services.RepositoryInterfaces;
 using Chefbook.API.Services.RepositoryServices;
 using Chefbook.API.Services.Service;
+using Chefbook.API.SignalR.Abstract;
+using Chefbook.API.SignalR.Concrete;
 using Chefbook.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -52,8 +54,9 @@ namespace Chefbook.API
             services.AddScoped<IImageService,ImageService>();
             services.AddScoped<ILikeService, LikeService>();
             services.AddScoped<IFollowService, FollowService>();
+            services.AddScoped<IConnectionService, ConnectionService>();
           
-            services.AddScoped<INotificationService, NotificationService>();
+          //  services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IStickerService, StickerService>();
             services.AddScoped<IStepService,StepService>();
             services.AddScoped<IStarService, StarService>();
@@ -80,6 +83,9 @@ namespace Chefbook.API
             //    builder.AllowAnyHeader();
             //    builder.AllowCredentials();
             //}));
+
+            services.AddSignalR();
+            //services.AddSingleton<IHubNotification, HubNotification>();
             services.AddAutoMapper(typeof(Startup));
             services.AddMvc();
             services.AddCors(config =>
@@ -108,8 +114,12 @@ namespace Chefbook.API
                 app.UseDeveloperExceptionPage();
             }
 
+           // app.UseSignalR(routes => { routes.MapHub<NotificationHub>("/notificationhub"); });
 
-          
+            app.UseSignalR(route => {
+                route.MapHub<NotificationHub>("/notificationhub");
+            });
+
             app.UseAuthentication();
 
             app.UseSwagger();

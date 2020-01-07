@@ -9,5 +9,8 @@ namespace Chefbook.API.Services.Interface
 {
     public interface INotificationService : IGenericRepository<Notification>
     {
+        void Create(Notification notification);
+        List<Notification> GetUserNotifications(Guid userId);
+        void AddNotification(Guid aliciId, Guid gondericiId, string mesaj);
     }
 }

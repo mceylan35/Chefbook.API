@@ -17,10 +17,12 @@ namespace Chefbook.API.Controllers
     public class FollowController : ControllerBase
     {
         private IFollowService _followService;
+        private INotificationService _notificationService;
 
-        public FollowController(IFollowService followService)
+        public FollowController(IFollowService followService, INotificationService notificationService)
         {
             _followService = followService;
+            _notificationService = notificationService;
         }
 
         [HttpGet]

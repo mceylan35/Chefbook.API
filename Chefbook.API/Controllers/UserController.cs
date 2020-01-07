@@ -12,6 +12,7 @@ using Chefbook.API.Repository;
 using Chefbook.API.Services.Interface;
 using Chefbook.API.Services.RepositoryInterfaces;
 using Chefbook.API.Services.RepositoryServices;
+using Chefbook.API.SignalR.Concrete;
 using Chefbook.Model;
 using Chefbook.Model.DTO;
 using Chefbook.Model.Models;
@@ -22,6 +23,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -43,8 +45,10 @@ namespace Chefbook.API.Controllers
         private IStarService _starService;
         private IOptions<CloudinarySettings> _cloudinaryConfig;
         private Cloudinary _cloudinary;
-        public UserController(IUserService userService, IConfiguration configuration, IStarService starService, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
+        private readonly IHubContext<NotificationHub> _hubContext;
+        public UserController(IHubContext<NotificationHub> hubContext,IUserService userService, IConfiguration configuration, IStarService starService, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
         {
+            _hubContext = hubContext;
             _userService = userService;
             _configuration = configuration;
             _followService = followService;
@@ -63,32 +67,37 @@ namespace Chefbook.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return StatusCode(301, "Lütfen Formu Doldurunuz.");
             }
-            if (await _userService.UserExists(user.UserName))
+            if (await _userService.UserExists(user.UserName.Trim()) )
             {
-                ModelState.AddModelError("Mail", "Mail already exists");
+
+                return StatusCode(302, "Kullanýcý Adý Mevcut");
+            }
+
+            if (await _userService.MailExists(user.Mail.Trim()))
+            {
+                return StatusCode(303, "Mail Adresi Mevcut");
             }
             try
             {
                 var userToCreate = new User()
                 {
-                    Mail = user.Mail,
-                    NameSurName = user.NameSurName,
+                    Mail = user.Mail.Trim(),
+                    NameSurName = user.NameSurName.Trim(),
                     RegisterDate = DateTime.Now,
-                    UserName = user.UserName,
-                    //  Birthday = user.Birthday,
-                    // Gender = user.Gender,
+                    UserName = user.UserName.Trim(),
+                   
                     Id = Guid.NewGuid(),
                 };
                 var createdUser = await _userService.Register(userToCreate, user.Password);
                 var tokenString = GetToken(userToCreate.Id, userToCreate.Mail);
-                return Ok(tokenString);
+                return StatusCode(200, "Kayýt Baþarýlý");
             }
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(304, "Bir Hata Oluþtu.");
             }
 
 
@@ -218,12 +227,7 @@ namespace Chefbook.API.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             var walluser = _userService.Wall(Guid.Parse(currentUserId));
-            foreach (var model in walluser)
-            {
-
-                model.StarNumber = model.StarNumber / _starService.GetAll().Count(i => i.Id == model.StarId);
-
-            }
+       
             return Ok(walluser);
         }
 

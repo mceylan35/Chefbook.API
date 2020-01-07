@@ -36,8 +36,8 @@ namespace Chefbook.API.Context
         public virtual DbSet<Step> Step { get; set; }
         public virtual DbSet<Sticker> Sticker { get; set; }
         public virtual DbSet<User> User { get; set; }
+        public virtual DbSet<Connection> Connection { get; set; }
 
-      
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Chefbook.API.Context;
@@ -100,25 +101,27 @@ namespace Chefbook.API.Services.RepositoryServices
             using (var context=new ChefContext())
             {
 
-                var user = GetById(userId);
-
-               // var wall = context.Database.ExecuteSqlCommand("Wall @p0", userId );
+               
+         
                 var outputList = from p in context.Post
                                  join u in context.User on p.UserId equals u.Id
+                                 join fo in context.Follow on u.Id equals userId
                                  join s in context.Star on p.Id equals s.PostId
+                                 
                                  
 
                                  select new WallPostViewModel
                                  {
-                                     StarId = p.Id,
-                                     NameSurName = u.NameSurName,
-                                     Description = u.Description,
+                                    
+                                     NameSurName = u.NameSurName.Trim(),
+                                     PostId = p.Id,
+                                     Description = u.Description.Trim(),
                                      LikeCount = p.LikeCount,
                                      PostDate = p.PostDate,
                                      ProfileImage = u.ProfileImage,
-                                     Title = p.Title,
+                                     Title = p.Title.Trim(),
                                      UserName = u.UserName,
-                                    // StarNumber = p.RateSum
+                                     Star = p.Star
 
                                  };
 

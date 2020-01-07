@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using Chefbook.API.Models;
 using Chefbook.API.Services.Interface;
 using Chefbook.API.Services.RepositoryInterfaces;
+using Chefbook.API.SignalR.Concrete;
 using Chefbook.Model.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Chefbook.API.Controllers
 {
@@ -22,11 +24,14 @@ namespace Chefbook.API.Controllers
         
         private IUserService _userService;
         private IFollowService _followService;
-
-        public FollowRequestController(IUserService userService, IFollowService followService)
+        private INotificationService _notificationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        public FollowRequestController(IHubContext<NotificationHub> hubContext,IUserService userService, IFollowService followService, INotificationService notificationService)
         {
+            _hubContext = hubContext;
             _userService = userService;
             _followService = followService;
+            _notificationService = notificationService;
         }
     
         [Route("follow")]
@@ -48,7 +53,12 @@ namespace Chefbook.API.Controllers
                     return BadRequest("Zaten Takip ediyorsun");
                 }
                 _followService.Add(new Follow { Id = Guid.NewGuid(), FollowDate = DateTime.Now, FollowersId = model.FollowersId, FollowingId = model.FollowingId });
-
+                _notificationService.Create(new Notification
+                {
+                    Id = Guid.NewGuid(),UserId = Guid.Parse(currentUserId),TriggerUserId = model.FollowersId
+                });
+                //Clients.User(who.ConnectionId).SendAsync("NotificationGuncelle");
+                _hubContext.Clients.User("asd").SendAsync("NotificationGuncelle");
                 return Ok("Success");
                 // return Ok("Başarılı");
 

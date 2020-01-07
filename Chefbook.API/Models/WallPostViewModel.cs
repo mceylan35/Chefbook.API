@@ -7,7 +7,7 @@ namespace Chefbook.API.Models
 {
     public class WallPostViewModel
     {
-        public Guid StarId { get; set; }
+        public Guid PostId { get; set; }
         public string NameSurName { get; set; }
         public string UserName { get; set; }
         public string ProfileImage { get; set; }
@@ -15,6 +15,6 @@ namespace Chefbook.API.Models
         public string Description { get; set; }
         public long? LikeCount { get; set; }
         public string Title { get; set; }
-        public double StarNumber { get; set; }
+        public double Star { get; set; }
     }
 }

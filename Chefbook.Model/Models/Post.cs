@@ -11,6 +11,7 @@ namespace Chefbook.Model.Models
         {
             Like = new HashSet<Like>();
             Sticker = new HashSet<Sticker>();
+
         }
 
         public Guid Id { get; set; }
@@ -19,7 +20,11 @@ namespace Chefbook.Model.Models
         public string Description { get; set; }
         public long? LikeCount { get; set; }
         public string Title { get; set; }
-        public long? RateSum { get; set; }
+        public long StarGivenUserCount { get; set; }
+        public double SumStar { get; set; }
+        public double Star { get; set; }
+     
+
 
         public virtual User User { get; set; }
         public virtual ICollection<Like> Like { get; set; }
