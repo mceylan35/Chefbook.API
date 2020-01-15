@@ -48,7 +48,7 @@ namespace Chefbook.API.Controllers
         private readonly IHubContext<NotificationHub> _hubContext;
         public UserController(IHubContext<NotificationHub> hubContext,IUserService userService, IConfiguration configuration, IStarService starService, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
         {
-            _hubContext = hubContext;
+            _hubContext=hubContext;
             _userService = userService;
             _configuration = configuration;
             _followService = followService;
@@ -132,7 +132,7 @@ namespace Chefbook.API.Controllers
                     new Claim(ClaimTypes.Name,mail) // kullanýcý maili tutuyoruz
               
                 }),
-                Expires = DateTime.Now.AddDays(30),//1gün oturum süresi
+                Expires = DateTime.Now.AddDays(30),//30 gün oturum süresi
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature) //þifreleme kýsmý
             };
 
@@ -147,14 +147,14 @@ namespace Chefbook.API.Controllers
 
             try
             {
-                _userService.BeginTransaction();
-                var test = _userService.GetInclude(includes: sources => sources.Include(x => x.Comment)).ToList();
-                _userService.CommitTransaction();
+               //_userService.BeginTransaction();
+                var test = _userService.GetAll().ToList();
+               // _userService.CommitTransaction();
                 return Ok(test);
             }
             catch (Exception e)
             {
-                _userService.RollbackTransaction();
+              //  _userService.RollbackTransaction();
                 Console.WriteLine(e);
                 throw;
             }
@@ -169,14 +169,14 @@ namespace Chefbook.API.Controllers
                 var kullanicilar = _userService.Users(q);
                 if (kullanicilar != null)
                 {
-                    return Ok(kullanicilar);
+                    return StatusCode(200,kullanicilar);
                 }
 
-                return NotFound("Kullanýcý Bulunamadý!");
+                return StatusCode(404,"Kullanýcý Bulunumadi.");
             }
             catch (Exception e)
             {
-                return BadRequest(e);
+                return StatusCode(301,"Hata Oluþtu!");
             }
         }
 
@@ -233,6 +233,7 @@ namespace Chefbook.API.Controllers
 
         [HttpPut]
         [Route("coverupdate")]
+        [RequestSizeLimit(50000000000000000)]
         public IActionResult CoverUpdate([FromForm]IFormFile model)
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
@@ -372,6 +373,28 @@ namespace Chefbook.API.Controllers
             }
             return StatusCode(301, "hata Oluþtu");
             //return BadRequest("Bir hata oluþtu.");
+        }
+
+        [HttpPost]
+        [Route("Explore")]
+        [Authorize]
+        public IActionResult Explore()
+        {
+            try
+            {
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+                var explore= _userService.Explore(Guid.Parse(currentUserId));
+                if (explore!=null)
+                {
+                    return StatusCode(200, explore);
+                }
+
+                return StatusCode(404, "Post Bulunamadi");
+            }
+            catch (Exception e)
+            {
+                return StatusCode(301, "Hata Oluþtu.");
+            }
         }
 
         [HttpPost("changeprofile")]

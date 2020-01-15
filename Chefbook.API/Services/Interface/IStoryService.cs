@@ -5,14 +5,12 @@ using System.Threading.Tasks;
 using Chefbook.API.Models;
 using Chefbook.API.Repository;
 using Chefbook.Model.Models;
-using Microsoft.AspNetCore.Http;
 
 namespace Chefbook.API.Services.Interface
 {
-    public interface IImageService : IGenericRepository<Image>
+    public interface IStoryService:IGenericRepository<Story>
     {
-        void AddRange(List<Image> images);
-        
-        List<ProfilePostsDto> FindImage(Guid userId);
+        void AddRange(List<Story> stories);
+        List<StoryViewModel> Stories(Guid Id);
     }
 }

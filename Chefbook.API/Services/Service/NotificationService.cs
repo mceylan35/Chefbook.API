@@ -15,29 +15,22 @@ namespace Chefbook.API.Services.Service
 {
     public class NotificationService : GenericRepository<Notification, ChefContext>, INotificationService
     {
-        private IHubNotification _hubNotification;
-        private IHubContext<NotificationHub> _hubContext;
-
-        public NotificationService(IHubNotification hubNotification, IHubContext<NotificationHub> hubContext)
-        {
-            _hubNotification = hubNotification;
-            _hubContext = hubContext;
-        }
+       
         public void Create(Notification notification)
         {
             using (var context = new ChefContext())
             {
                 context.Notification.Add(notification);
                 
-               NotificationHub notificationHub=new NotificationHub();
+              // NotificationHub notificationHub=new NotificationHub();
               // notificationHub.OnConnectedAsync();
               // notificationHub.SendNotification(Guid.Parse(notification.TriggerUserId.ToString()));
 
 
-                _hubContext.Clients.Users(notification.UserId.ToString()).SendAsync("onConnectThisUser", notification.UserId.ToString());
+              //  _hubContext.Clients.Users(notification.UserId.ToString()).SendAsync("onConnectThisUser", notification.UserId.ToString());
 
                
-                _hubContext.Clients.Clients(notification.TriggerUserId.ToString()).SendAsync("NotificationGetir", "Notification Fonksiyonunu Yenile");
+              //  _hubContext.Clients.Clients(notification.TriggerUserId.ToString()).SendAsync("NotificationGetir", "Notification Fonksiyonunu Yenile");
 
               
 

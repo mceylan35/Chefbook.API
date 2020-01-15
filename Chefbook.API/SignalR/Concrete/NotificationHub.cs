@@ -6,19 +6,39 @@ using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Chefbook.API.Context;
+using Chefbook.API.Models;
+using Chefbook.API.Services.Interface;
+using Chefbook.API.Services.RepositoryInterfaces;
 using Chefbook.API.SignalR.Abstract;
 using Chefbook.Model.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
 
 
 namespace Chefbook.API.SignalR.Concrete
 {
-   // [Authorize]
+    [Authorize]
     //[HubName("emergyHub")]
     public class NotificationHub : Hub
     {
+        private IUserService _userService;
+        private IConfiguration _configuration;
+        private IFollowService _followService;
+        private IPostService _postService;
+        private IImageService _imageService;
+        private IStarService _starService;
 
+        public NotificationHub(IUserService userService, IConfiguration configuration, IFollowService followService, IPostService postService, IImageService imageService, IStarService starService)
+        {
+            _userService = userService;
+            _configuration = configuration;
+            _followService = followService;
+            _postService = postService;
+            _imageService = imageService;
+            _starService = starService;
+        }
 
         public override async Task OnConnectedAsync()
         {
@@ -69,7 +89,7 @@ namespace Chefbook.API.SignalR.Concrete
 
             return base.OnDisconnectedAsync(exception);
         }
-        [AllowAnonymous]
+      //  [AllowAnonymous]
         public  Task SendNotification(Guid whoId, Guid sendId, string message)
         {
             using (var context=new ChefContext())
@@ -85,30 +105,13 @@ namespace Chefbook.API.SignalR.Concrete
                 }
             }
         }
+
+
         public string GetConnectionId()
         {
             return Context.ConnectionId;
         }
-        // public override async Task OnConnectedAsync()
-        // {
-        //    //var currentUserId = Context.User.FindFirst(ClaimTypes.NameIdentifier).Value;
-        //    await Clients.Users(Context.ConnectionId).SendAsync("onConnectThisUser");
-
-        //    await base.OnConnectedAsync();
-
-        //     //await Clients.Caller.SendAsync("GetUserId", currentUserId);
-
-        // }
-        ////[HubMethodName("sendNotification")]
-        // public async Task SendNotification(Guid TargetGuid)
-        // {
-
-        //     await Clients.Client(TargetGuid.ToString())
-        //         .SendAsync("NotificationGetir", "Notification Fonksiyonunu Yenile ya da Kullanıcı Senin Porfilini Beğendi diyebiliriz.");
-
-
-
-        // }
+      
 
 
 

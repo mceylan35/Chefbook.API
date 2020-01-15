@@ -28,7 +28,7 @@ namespace Chefbook.API.Controllers
         private readonly IHubContext<NotificationHub> _hubContext;
         public FollowRequestController(IHubContext<NotificationHub> hubContext,IUserService userService, IFollowService followService, INotificationService notificationService)
         {
-            _hubContext = hubContext;
+             _hubContext = hubContext;
             _userService = userService;
             _followService = followService;
             _notificationService = notificationService;
@@ -57,10 +57,12 @@ namespace Chefbook.API.Controllers
                 {
                     Id = Guid.NewGuid(),UserId = Guid.Parse(currentUserId),TriggerUserId = model.FollowersId
                 });
-                //Clients.User(who.ConnectionId).SendAsync("NotificationGuncelle");
-                _hubContext.Clients.User("asd").SendAsync("NotificationGuncelle");
-                return Ok("Success");
-                // return Ok("Başarılı");
+                _hubContext.Clients.All.SendAsync("NotificationGuncelle");
+               
+               _hubContext.Clients.User("P0m3D-Y_Ra5VZBd3ypUR5g").SendAsync("SendNotification", Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"), Guid.Parse("6f6dc2ff-b828-41d1-a27b-a993e944ce7e"), "asdsad");
+
+               return StatusCode(200, "Başarılı");
+
 
             }
             catch (Exception e)

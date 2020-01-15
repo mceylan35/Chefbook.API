@@ -47,7 +47,6 @@ namespace Chefbook.API.Controllers
             if (notification!=null)
             {
                 return StatusCode(200, notification);
-
             }
             else
             {

@@ -18,8 +18,8 @@ namespace Chefbook.API.Services.Service
         {
             using (var context=new ChefContext())
             {
-                    context.Image.AddRangeAsync(images);
-                    context.SaveChangesAsync();
+                    context.Image.AddRange(images);
+                    context.SaveChanges();
                 
                 
             }

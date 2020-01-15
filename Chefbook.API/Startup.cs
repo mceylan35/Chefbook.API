@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -55,8 +56,11 @@ namespace Chefbook.API
             services.AddScoped<ILikeService, LikeService>();
             services.AddScoped<IFollowService, FollowService>();
             services.AddScoped<IConnectionService, ConnectionService>();
-          
-          //  services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddSingleton<IHubNotification, HubNotification>();
+            services.AddScoped<IIngredientService, IngredientService>();
+          //  services.AddSingleton<IHubContext<NotificationHub>>();
+            services.AddScoped<IStoryService, StoryService>();
             services.AddScoped<IStickerService, StickerService>();
             services.AddScoped<IStepService,StepService>();
             services.AddScoped<IStarService, StarService>();
@@ -71,7 +75,7 @@ namespace Chefbook.API
                    ValidateAudience = false,
                };
            });
-
+         
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "Chefbook", Version = "v1" });
@@ -88,6 +92,17 @@ namespace Chefbook.API
             //services.AddSingleton<IHubNotification, HubNotification>();
             services.AddAutoMapper(typeof(Startup));
             services.AddMvc();
+            services.Configure<FormOptions>(options =>
+
+            {
+
+                options.ValueLengthLimit = int.MaxValue;
+
+                options.MultipartBodyLengthLimit = int.MaxValue;
+
+                options.MultipartHeadersLengthLimit = int.MaxValue;
+
+            });
             services.AddCors(config =>
             {
                 config.AddPolicy("Ozgul", bldr =>
@@ -117,11 +132,11 @@ namespace Chefbook.API
            // app.UseSignalR(routes => { routes.MapHub<NotificationHub>("/notificationhub"); });
 
             app.UseSignalR(route => {
-                route.MapHub<NotificationHub>("/notificationhubs");
+                route.MapHub<NotificationHub>("/notificationhub");
             });
 
             app.UseAuthentication();
-
+            app.UseDeveloperExceptionPage();
             app.UseSwagger();
 
             app.UseSwaggerUI(c =>

@@ -96,6 +96,92 @@ namespace Chefbook.API.Services.RepositoryServices
             }
         }
 
+        public List<ExplorePostViewModel> Explore(Guid? userId)
+        {
+
+            using (var context=new ChefContext())
+            {
+                //var begendiklerim = (from p in context.Post
+                //    join s in context.Sticker on p.Id equals s.PostId 
+                //    join u in context.User on p.UserId equals u.Id
+                //    join l in context.Like on p.Id equals l.Id
+                //    join f in context.Follow on p.Id equals f.FollowingId
+                //    where f.FollowersId == userId
+
+                //    select new ExplorePostViewModel
+                //    {
+
+                //        NameSurName = u.NameSurName.Trim(),
+                //        PostId = p.Id,
+                //        Description = u.Description.Trim(),
+                //        LikeCount = p.LikeCount,
+                //        PostDate = p.PostDate,
+                //        ProfileImage = u.ProfileImage,
+                //        Title = p.Title.Trim(),
+                //        UserName = u.UserName,
+                //        Star = p.Star,
+                //        Sticker=s.Name
+
+                //    }).ToList();
+                //////////////////////////////////////////////////////////////////////////////////////
+                //var kesfet = (from p in context.Post
+                //    join s in context.Sticker on p.Id equals s.PostId
+                //    join u in context.User on p.UserId equals u.Id
+                //    join l in context.Like on p.Id equals l.Id
+                //    join f in context.Follow on p.Id equals f.FollowingId
+                //    where f.FollowersId != userId
+
+                //              select new ExplorePostViewModel
+                //    {
+
+                //        NameSurName = u.NameSurName.Trim(),
+                //        PostId = p.Id,
+                //        Description = u.Description.Trim(),
+                //        LikeCount = p.LikeCount,
+                //        PostDate = p.PostDate,
+                //        ProfileImage = u.ProfileImage,
+                //        Title = p.Title.Trim(),
+                //        UserName = u.UserName,
+                //        Star = p.Star,
+                //        Sticker = s.Name
+
+                //    }).ToList();
+                //List<ExplorePostViewModel> explore=new List<ExplorePostViewModel>();
+                //foreach (var b in begendiklerim)
+                //{
+                //     explore.AddRange(kesfet.Where(i=>i.Sticker.Contains(b.Sticker)));
+
+                //}
+                var kesfet =(
+                    from p in context.Post
+                    join u in context.User on p.Id equals u.Id 
+                    where (from o in context.Post
+                            select o.Id)
+                        .Contains(p.UserId)
+                    select new ExplorePostViewModel
+                    {
+
+                        NameSurName = u.NameSurName.Trim(),
+                        PostId = p.Id,
+                        Description = u.Description.Trim(),
+                        LikeCount = p.LikeCount,
+                        PostDate = p.PostDate,
+                        ProfileImage = u.ProfileImage,
+                        Title = p.Title.Trim(),
+                        UserName = u.UserName,
+                        Star = p.Star,
+                        //Sticker = s.Name
+
+                    }).ToList();
+
+
+
+
+                return null;
+
+            }
+           
+        }
         public List<WallPostViewModel> Wall(Guid userId)
         {
             using (var context=new ChefContext())
@@ -107,8 +193,8 @@ namespace Chefbook.API.Services.RepositoryServices
                                  join u in context.User on p.UserId equals u.Id
                                  join fo in context.Follow on u.Id equals userId
                                  join s in context.Star on p.Id equals s.PostId
-                                 
-                                 
+                               //  group new { p, u, } by new { u.UserName, u.Description,p.Id,p.LikeCount,p.PostDate,u.ProfileImage,p.Title,p.Star,u.NameSurName } into g
+
 
                                  select new WallPostViewModel
                                  {

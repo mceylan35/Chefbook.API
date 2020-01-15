@@ -19,6 +19,16 @@ namespace Chefbook.API
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseIISIntegration()
+                .UseKestrel(options =>
+
+                {
+
+                    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(120);
+
+                    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(120);
+
+                })
                 .UseStartup<Startup>();
     }
 }

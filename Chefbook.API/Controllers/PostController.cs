@@ -31,11 +31,11 @@ namespace Chefbook.API.Controllers
         private ILikeService _likeService;
         private IOptions<CloudinarySettings> _cloudinaryConfig;
         private IStarService _starService;
-
+        private IIngredientService _ingredientService;
 
         private Cloudinary _cloudinary;
 
-        public PostController(IStarService starService, IPostService postService, IStepService stepService,
+        public PostController(IStarService starService, IPostService postService, IStepService stepService, IIngredientService ingredientService,
             IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig)
         {
             _postService = postService;
@@ -43,6 +43,7 @@ namespace Chefbook.API.Controllers
             _imageService = imageService;
             _likeService = likeService;
             _starService = starService;
+            _ingredientService = ingredientService;
             _cloudinaryConfig = cloudinaryConfig;
             Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey,
                 _cloudinaryConfig.Value.ApiSecret);
@@ -56,13 +57,11 @@ namespace Chefbook.API.Controllers
 
         [HttpPost]
         [Route("add")]
-        public IActionResult Add([FromForm] PostDTO model)
+        public IActionResult Add([FromForm]PostDTO model)
         {
             try
             {
-                // _postService.BeginTransaction();
-                // _imageService.BeginTransaction();
-                // _stepService.BeginTransaction();
+            
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
                 Guid guid = Guid.NewGuid();
@@ -78,11 +77,15 @@ namespace Chefbook.API.Controllers
 
                 foreach (var file in model.Photos)
                 {
-
-
-                    var uploadResult = new ImageUploadResult();
-                    if (file.Length > 0)
+                  
+                        var extention = Path.GetExtension(file.FileName);
+                    if (extention==".jpg" ||extention==".png")
                     {
+                        
+               
+
+                     var uploadResult = new ImageUploadResult();
+                   
                         using (var stream = file.OpenReadStream())
                         {
 
@@ -95,8 +98,8 @@ namespace Chefbook.API.Controllers
                             uploadResult = _cloudinary.Upload(uploadParams);
 
                         }
-                    }
-
+                    
+               
 
 
                     images.Add(new Image
@@ -104,8 +107,35 @@ namespace Chefbook.API.Controllers
                         Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid,
                         PublicId = uploadResult.PublicId
                     });
+                    }
 
+                    if (extention==".mp4")
+                    {
+                      
+                       
+                           var uploadvideoResult = new VideoUploadResult();
+                            using (var stream = file.OpenReadStream())
+                            {
 
+                                var uploadParams = new VideoUploadParams()
+                            {
+                                File = new FileDescription(file.Name, stream)
+                                
+                            };
+                                uploadvideoResult = _cloudinary.Upload(uploadParams);
+                            }
+                            images.Add(new Image
+                            {
+                                Id = Guid.NewGuid(),
+                                ImageUrls = uploadvideoResult.Uri.ToString(),
+                                PostId = guid,
+                                PublicId = uploadvideoResult.PublicId
+                            });
+                        }
+                      
+
+                    
+                   
 
                 }
 
@@ -117,11 +147,24 @@ namespace Chefbook.API.Controllers
                     List<Step> steps = new List<Step>();
                     foreach (var step in model.Steps)
                     {
-                        steps.Add(new Step {Id = Guid.NewGuid(), PostId = guid, Description = step.Description});
+                        
+                        steps.Add(new Step {Id = Guid.NewGuid(), PostId = guid, Description = step});
 
                     }
 
                     _stepService.AddRange(steps);
+                }
+                if (model.Ingredients != null)
+                {
+                    List<Ingredients> ingredientses = new List<Ingredients>();
+                    foreach (var ingredient in model.Ingredients)
+                    {
+
+                        ingredientses.Add(new Ingredients { Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient });
+
+                    }
+
+                    _ingredientService.AddRange(ingredientses);
                 }
 
 
