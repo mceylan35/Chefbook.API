@@ -102,7 +102,7 @@ namespace Chefbook.API.Controllers
 
                     if (extention == ".mp4")
                     {
-                        var uploadideoResult = new VideoUploadResult();
+                        var uploadvideoResult = new VideoUploadResult();
                         using (var stream = file.OpenReadStream())
                         {
                             var uploadParams = new VideoUploadParams()
