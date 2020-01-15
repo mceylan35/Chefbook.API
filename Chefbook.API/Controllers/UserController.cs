@@ -12,7 +12,6 @@ using Chefbook.API.Repository;
 using Chefbook.API.Services.Interface;
 using Chefbook.API.Services.RepositoryInterfaces;
 using Chefbook.API.Services.RepositoryServices;
-using Chefbook.API.SignalR.Concrete;
 using Chefbook.Model;
 using Chefbook.Model.DTO;
 using Chefbook.Model.Models;
@@ -23,7 +22,6 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -45,10 +43,11 @@ namespace Chefbook.API.Controllers
         private IStarService _starService;
         private IOptions<CloudinarySettings> _cloudinaryConfig;
         private Cloudinary _cloudinary;
-        private readonly IHubContext<NotificationHub> _hubContext;
-        public UserController(IHubContext<NotificationHub> hubContext,IUserService userService, IConfiguration configuration, IStarService starService, IFollowService followService, IPostService postService, IImageService imageService, IOptions<CloudinarySettings> cloudinaryConfig)
+
+        public UserController(IUserService userService, IConfiguration configuration, IStarService starService,
+            IFollowService followService, IPostService postService, IImageService imageService,
+            IOptions<CloudinarySettings> cloudinaryConfig)
         {
-            _hubContext=hubContext;
             _userService = userService;
             _configuration = configuration;
             _followService = followService;
@@ -57,51 +56,47 @@ namespace Chefbook.API.Controllers
             _cloudinaryConfig = cloudinaryConfig;
             _starService = starService;
 
-            Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey, _cloudinaryConfig.Value.ApiSecret);
+            Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey,
+                _cloudinaryConfig.Value.ApiSecret);
             _cloudinary = new Cloudinary(account);
         }
 
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register([FromBody]RegisterDTO user)
+        public async Task<IActionResult> Register([FromBody] RegisterDTO user)
         {
             if (!ModelState.IsValid)
             {
-                return StatusCode(301, "Lütfen Formu Doldurunuz.");
-            }
-            if (await _userService.UserExists(user.UserName.Trim()) )
-            {
-
-                return StatusCode(302, "Kullanýcý Adý Mevcut");
+                return BadRequest(ModelState);
             }
 
-            if (await _userService.MailExists(user.Mail.Trim()))
+            if (await _userService.UserExists(user.UserName))
             {
-                return StatusCode(303, "Mail Adresi Mevcut");
+                ModelState.AddModelError("Mail", "Mail already exists");
             }
+
             try
             {
                 var userToCreate = new User()
                 {
-                    Mail = user.Mail.Trim(),
-                    NameSurName = user.NameSurName.Trim(),
+                    Mail = user.Mail,
+                    NameSurName = user.NameSurName,
                     RegisterDate = DateTime.Now,
-                    UserName = user.UserName.Trim(),
-                   
+                    UserName = user.UserName,
+                    //  Birthday = user.Birthday,
+                    // Gender = user.Gender,
                     Id = Guid.NewGuid(),
                 };
                 var createdUser = await _userService.Register(userToCreate, user.Password);
                 var tokenString = GetToken(userToCreate.Id, userToCreate.Mail);
-                return StatusCode(200, "Kayýt Baþarýlý");
+                return Ok(tokenString);
             }
             catch (Exception)
             {
-
-                return StatusCode(304, "Bir Hata Oluþtu.");
+                throw;
             }
-
-
         }
+
         [HttpPost]
         [Route("login")]
         public async Task<ActionResult> Login([FromBody] LoginDTO login)
@@ -110,13 +105,10 @@ namespace Chefbook.API.Controllers
             if (user == null)
             {
                 return Unauthorized();
-
             }
 
             string tokenString = GetToken(user.Id, login.Email);
-            return Ok(tokenString); //þifrelenmiþ tokený gönderiyoruz. 
-
-
+            return Ok(tokenString); //ï¿½ifrelenmiï¿½ tokenï¿½ gï¿½nderiyoruz. 
         }
 
         string GetToken(Guid userId, string mail)
@@ -128,33 +120,33 @@ namespace Chefbook.API.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier,userId.ToString()),//kullanýcý Ýd tutuyoruz
-                    new Claim(ClaimTypes.Name,mail) // kullanýcý maili tutuyoruz
-              
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()), //kullanï¿½cï¿½ ï¿½d tutuyoruz
+                    new Claim(ClaimTypes.Name, mail) // kullanï¿½cï¿½ maili tutuyoruz
                 }),
-                Expires = DateTime.Now.AddDays(30),//30 gün oturum süresi
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature) //þifreleme kýsmý
+                Expires = DateTime.Now.AddDays(30), //1gï¿½n oturum sï¿½resi
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha512Signature) //ï¿½ifreleme kï¿½smï¿½
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor); //tokený üret
+            var token = tokenHandler.CreateToken(tokenDescriptor); //tokenï¿½ ï¿½ret
             var tokenString = tokenHandler.WriteToken(token);
             return tokenString;
         }
+
         [HttpGet]
         [Route("liste")]
         public ActionResult Liste()
         {
-
             try
             {
-               //_userService.BeginTransaction();
-                var test = _userService.GetAll().ToList();
-               // _userService.CommitTransaction();
+                _userService.BeginTransaction();
+                var test = _userService.GetInclude(includes: sources => sources.Include(x => x.Comment)).ToList();
+                _userService.CommitTransaction();
                 return Ok(test);
             }
             catch (Exception e)
             {
-              //  _userService.RollbackTransaction();
+                _userService.RollbackTransaction();
                 Console.WriteLine(e);
                 throw;
             }
@@ -169,14 +161,14 @@ namespace Chefbook.API.Controllers
                 var kullanicilar = _userService.Users(q);
                 if (kullanicilar != null)
                 {
-                    return StatusCode(200,kullanicilar);
+                    return Ok(kullanicilar);
                 }
 
-                return StatusCode(404,"Kullanýcý Bulunumadi.");
+                return NotFound("Kullanï¿½cï¿½ Bulunamadï¿½!");
             }
             catch (Exception e)
             {
-                return StatusCode(301,"Hata Oluþtu!");
+                return BadRequest(e);
             }
         }
 
@@ -209,10 +201,10 @@ namespace Chefbook.API.Controllers
 
 
                 return Ok(profileDto);
-                //Sayfaya göre deðiþecek.
+                //Sayfaya gï¿½re deï¿½iï¿½ecek.
 
 
-                // return NotFound("Kullanýcý Bulunamadý!");
+                // return NotFound("Kullanï¿½cï¿½ Bulunamadï¿½!");
             }
             catch (Exception e)
             {
@@ -227,14 +219,17 @@ namespace Chefbook.API.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             var walluser = _userService.Wall(Guid.Parse(currentUserId));
-       
+            foreach (var model in walluser)
+            {
+                model.StarNumber = model.StarNumber / _starService.GetAll().Count(i => i.Id == model.StarId);
+            }
+
             return Ok(walluser);
         }
 
         [HttpPut]
         [Route("coverupdate")]
-        [RequestSizeLimit(50000000000000000)]
-        public IActionResult CoverUpdate([FromForm]IFormFile model)
+        public IActionResult CoverUpdate([FromForm] IFormFile model)
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
@@ -243,45 +238,29 @@ namespace Chefbook.API.Controllers
             {
                 using (var stream = model.OpenReadStream())
                 {
-
                     var uploadParams = new ImageUploadParams
                     {
                         File = new FileDescription(model.Name, stream),
-
-
                     };
                     uploadResult = _cloudinary.Upload(uploadParams);
-
                 }
 
                 var user = _userService.GetById(Guid.Parse(currentUserId));
                 user.CoverImage = uploadResult.Uri.ToString();
                 _userService.Update(user);
-                return StatusCode(200, "Cover Güncellendi.");
+                return StatusCode(200, "Cover Gï¿½ncellendi.");
             }
             else
             {
                 return StatusCode(301, "Resim Yok");
             }
-
-
-
-
-
-
-
-
-
-
         }
 
         [HttpPut]
         [Route("profileimageupdate")]
-        public IActionResult ProfileImageUpdate([FromForm]IFormFile model)
+        public IActionResult ProfileImageUpdate([FromForm] IFormFile model)
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-
-
 
 
             var uploadResult = new ImageUploadResult();
@@ -289,32 +268,22 @@ namespace Chefbook.API.Controllers
             {
                 using (var stream = model.OpenReadStream())
                 {
-
                     var uploadParams = new ImageUploadParams
                     {
                         File = new FileDescription(model.Name, stream),
-
-
                     };
                     uploadResult = _cloudinary.Upload(uploadParams);
-
                 }
 
                 var user = _userService.GetById(Guid.Parse(currentUserId));
                 user.ProfileImage = uploadResult.Uri.ToString();
                 _userService.Update(user);
-                return StatusCode(200, "Resim Güncellendi.");
+                return StatusCode(200, "Resim Gï¿½ncellendi.");
             }
             else
             {
                 return StatusCode(301, "Resim Yok.");
             }
-
-
-
-
-
-
         }
 
         [HttpPost("changepassword")]
@@ -326,41 +295,36 @@ namespace Chefbook.API.Controllers
                 try
                 {
                     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-                    var response = await _userService.ChangePassword(changePasswordViewModel, Guid.Parse(currentUserId));
+                    var response =
+                        await _userService.ChangePassword(changePasswordViewModel, Guid.Parse(currentUserId));
                     if (response)
                     {
-                        return StatusCode(200, "Þifre Deðiþtirildi.");
+                        return StatusCode(200, "ï¿½ifre Deï¿½iï¿½tirildi.");
                     }
-                    // ModelState.AddModelError("ChangePasswordError","Þifre Deðiþtirilemedi.");
-                    return StatusCode(301, "Eski Þifre Yanlýþ");
-                  
+
+                    // ModelState.AddModelError("ChangePasswordError","ï¿½ifre Deï¿½iï¿½tirilemedi.");
+                    return StatusCode(301, "Eski ï¿½ifre Yanlï¿½ï¿½");
                 }
                 catch (Exception x)
                 {
-                    ModelState.AddModelError("ChangePasswordError", x.ToString()); // TODO: Replace x with your error message
-                    return StatusCode(302, "Þifreler ayný deðil.");
+                    ModelState.AddModelError("ChangePasswordError",
+                        x.ToString()); // TODO: Replace x with your error message
+                    return StatusCode(302, "ï¿½ifreler aynï¿½ deï¿½il.");
                 }
             }
 
-            return StatusCode(302, "Bir hata  oluþtu.");
-
+            return StatusCode(302, "Bir hata  oluï¿½tu.");
         }
-
-
-
-
 
 
         [HttpGet("getprofiledetails")]
         [Authorize]
         public IActionResult ChangeProfileGet()
         {
-
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             var user = _userService.GetById(Guid.Parse(currentUserId));
             if (user != null)
             {
-
                 return StatusCode(200, new ChangeInformationProfileViewModel
                 {
                     NameSurName = user.NameSurName,
@@ -368,59 +332,31 @@ namespace Chefbook.API.Controllers
                     UserName = user.UserName,
                     Biography = user.Description
                 });
-
-
             }
-            return StatusCode(301, "hata Oluþtu");
-            //return BadRequest("Bir hata oluþtu.");
-        }
 
-        [HttpPost]
-        [Route("Explore")]
-        [Authorize]
-        public IActionResult Explore()
-        {
-            try
-            {
-                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-                var explore= _userService.Explore(Guid.Parse(currentUserId));
-                if (explore!=null)
-                {
-                    return StatusCode(200, explore);
-                }
-
-                return StatusCode(404, "Post Bulunamadi");
-            }
-            catch (Exception e)
-            {
-                return StatusCode(301, "Hata Oluþtu.");
-            }
+            return StatusCode(301, "hata Oluï¿½tu");
+            //return BadRequest("Bir hata oluï¿½tu.");
         }
 
         [HttpPost("changeprofile")]
         [Authorize]
         public IActionResult ChangeProfile(ChangeInformationProfileViewModel model)
         {
-
-
             if (ModelState.IsValid)
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 var user = _userService.GetById(Guid.Parse(currentUserId));
 
-                if (user.UserName != model.UserName || user.Mail != model.Mail || user.NameSurName != model.NameSurName || user.Description != model.Biography)
+                if (user.UserName != model.UserName || user.Mail != model.Mail ||
+                    user.NameSurName != model.NameSurName || user.Description != model.Biography)
                 {
-
-
-
-
                     if (user.UserName != model.UserName)
                     {
                         var isExistingUserName = _userService.UserExists(model.UserName);
 
                         if (isExistingUserName.Result)
                         {
-                            return StatusCode(301, "Böyle bir UserName var.");
+                            return StatusCode(301, "Bï¿½yle bir UserName var.");
                         }
                         else
                         {
@@ -434,7 +370,7 @@ namespace Chefbook.API.Controllers
 
                         if (isExistingMail.Result)
                         {
-                            return StatusCode(302, "Böyle bir Mail var.");
+                            return StatusCode(302, "Bï¿½yle bir Mail var.");
                         }
                         else
                         {
@@ -448,22 +384,15 @@ namespace Chefbook.API.Controllers
                         user.NameSurName = model.NameSurName;
                     _userService.Update(user);
 
-                    return StatusCode(200, "Bilgiler Güncellendi.");
-
+                    return StatusCode(200, "Bilgiler Gï¿½ncellendi.");
                 }
                 else
                 {
-                    return StatusCode(304, "Bilgiler Güncellenmedi.");
+                    return StatusCode(304, "Bilgiler Gï¿½ncellenmedi.");
                 }
-               
-
             }
-            return BadRequest("Hata oluþtu");
+
+            return BadRequest("Hata oluï¿½tu");
         }
-
-
-
-
-
     }
 }
