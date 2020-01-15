@@ -32,17 +32,19 @@ namespace Chefbook.API.Controllers
         private IOptions<CloudinarySettings> _cloudinaryConfig;
         private IStarService _starService;
         private IIngredientService _ingredientService;
+        private ICommentService _commentService;
 
         private Cloudinary _cloudinary;
 
         public PostController(IStarService starService, IPostService postService, IStepService stepService, IIngredientService ingredientService,
-            IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig)
+            IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig, ICommentService commentService)
         {
             _postService = postService;
             _stepService = stepService;
             _imageService = imageService;
             _likeService = likeService;
             _starService = starService;
+            _commentService = commentService;
             _ingredientService = ingredientService;
             _cloudinaryConfig = cloudinaryConfig;
             Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey,
@@ -213,6 +215,14 @@ namespace Chefbook.API.Controllers
             {
                 return BadRequest(e);
             }
+        }
+
+        [HttpGet]
+        [Route("details/{postId}")]
+        public IActionResult Detay(Guid postId)
+        {
+            var detay = _postService.Detay(postId);
+            return Ok(detay);
         }
 
         [HttpGet]
