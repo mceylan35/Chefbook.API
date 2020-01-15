@@ -36,8 +36,10 @@ namespace Chefbook.API.Controllers
 
         private Cloudinary _cloudinary;
 
-        public PostController(IStarService starService, IPostService postService, IStepService stepService, IIngredientService ingredientService,
-            IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig, ICommentService commentService)
+        public PostController(IStarService starService, IPostService postService, IStepService stepService,
+            IIngredientService ingredientService,
+            IImageService imageService, ILikeService likeService, IOptions<CloudinarySettings> cloudinaryConfig,
+            ICommentService commentService)
         {
             _postService = postService;
             _stepService = stepService;
@@ -50,97 +52,75 @@ namespace Chefbook.API.Controllers
             Account account = new Account(_cloudinaryConfig.Value.CloudName, _cloudinaryConfig.Value.ApiKey,
                 _cloudinaryConfig.Value.ApiSecret);
             _cloudinary = new Cloudinary(account);
-
-
         }
-
-
 
 
         [HttpPost]
         [Route("add")]
-        public IActionResult Add([FromForm]PostDTO model)
+        public IActionResult Add([FromForm] PostDTO model)
         {
             try
             {
-            
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-                Guid guid = Guid.NewGuid();
+                var guid = Guid.NewGuid();
 
-
-
-                if (model.Photos.Any(f => f.Length == 0))
+                if (model.Photos.Count == 0)
                 {
-                    return BadRequest();
+                    return BadRequest("Photos count is 0.");
+                }
+
+                if (model.Photos == null)
+                {
+                    return BadRequest("Photos is null.");
                 }
 
                 var images = new List<Image>();
 
                 foreach (var file in model.Photos)
                 {
-                  
-                        var extention = Path.GetExtension(file.FileName);
-                    if (extention==".jpg" ||extention==".png")
+                    var extention = Path.GetExtension(file.FileName);
+                    if (extention == ".jpg" || extention == ".png")
                     {
-                        
-               
+                        ImageUploadResult uploadResult;
 
-                     var uploadResult = new ImageUploadResult();
-                   
                         using (var stream = file.OpenReadStream())
                         {
-
                             var uploadParams = new ImageUploadParams
                             {
                                 File = new FileDescription(file.Name, stream),
-
-
                             };
                             uploadResult = _cloudinary.Upload(uploadParams);
-
                         }
-                    
-               
 
-
-                    images.Add(new Image
-                    {
-                        Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid,
-                        PublicId = uploadResult.PublicId
-                    });
+                        images.Add(new Image
+                        {
+                            Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid,
+                            PublicId = uploadResult.PublicId
+                        });
                     }
 
-                    if (extention==".mp4")
+                    if (extention == ".mp4")
                     {
-                      
-                       
-                           var uploadvideoResult = new VideoUploadResult();
-                            using (var stream = file.OpenReadStream())
-                            {
-
-                                var uploadParams = new VideoUploadParams()
+                        var uploadideoResult = new VideoUploadResult();
+                        using (var stream = file.OpenReadStream())
+                        {
+                            var uploadParams = new VideoUploadParams()
                             {
                                 File = new FileDescription(file.Name, stream)
-                                
                             };
-                                uploadvideoResult = _cloudinary.Upload(uploadParams);
-                            }
-                            images.Add(new Image
-                            {
-                                Id = Guid.NewGuid(),
-                                ImageUrls = uploadvideoResult.Uri.ToString(),
-                                PostId = guid,
-                                PublicId = uploadvideoResult.PublicId
-                            });
+                            uploadvideoResult = _cloudinary.Upload(uploadParams);
                         }
-                      
 
-                    
-                   
-
+                        images.Add(new Image
+                        {
+                            Id = Guid.NewGuid(),
+                            ImageUrls = uploadvideoResult.Uri.ToString(),
+                            PostId = guid,
+                            PublicId = uploadvideoResult.PublicId
+                        });
+                    }
                 }
-
 
 
                 _imageService.AddRange(images);
@@ -149,33 +129,30 @@ namespace Chefbook.API.Controllers
                     List<Step> steps = new List<Step>();
                     foreach (var step in model.Steps)
                     {
-                        
                         steps.Add(new Step {Id = Guid.NewGuid(), PostId = guid, Description = step});
-
                     }
 
                     _stepService.AddRange(steps);
                 }
+
                 if (model.Ingredients != null)
                 {
                     List<Ingredients> ingredientses = new List<Ingredients>();
                     foreach (var ingredient in model.Ingredients)
                     {
-
-                        ingredientses.Add(new Ingredients { Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient });
-
+                        ingredientses.Add(new Ingredients
+                            {Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient});
                     }
 
                     _ingredientService.AddRange(ingredientses);
                 }
 
 
-
-
                 _postService.Add(new Post
                 {
                     Id = guid, Description = model.Description, UserId = Guid.Parse(currentUserId),
-                    PostDate = DateTime.Now, LikeCount = 0, Title = model.Title,StarGivenUserCount = 0,SumStar = 0,Star = 0
+                    PostDate = DateTime.Now, LikeCount = 0, Title = model.Title, StarGivenUserCount = 0, SumStar = 0,
+                    Star = 0
                 });
 
 
@@ -192,7 +169,6 @@ namespace Chefbook.API.Controllers
                 // _stepService.RollbackTransaction();
                 return BadRequest(e);
             }
-
         }
 
         [HttpGet]
@@ -252,21 +228,17 @@ namespace Chefbook.API.Controllers
             {
                 return BadRequest(e);
             }
-
-
         }
 
         [HttpGet]
         [Route("dislike/{postId}")]
         public IActionResult DisLikePost(Guid postId)
         {
-
             try
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 if (_postService.DisLike(postId))
                 {
-
                     //dislike sorunlu
 
                     var dislike = _likeService.Get(i => i.BegenenId == Guid.Parse(currentUserId) && i.PostId == postId);
@@ -283,9 +255,6 @@ namespace Chefbook.API.Controllers
             {
                 return BadRequest(e);
             }
-
-
-
         }
 
         [HttpPost]
@@ -297,9 +266,8 @@ namespace Chefbook.API.Controllers
             var star = _starService.Get(i => i.UserId == Guid.Parse(currentUserId) && i.PostId == model.PostId);
 
             var post = _postService.GetById(model.PostId);
-            if (star==null)
+            if (star == null)
             {
-               
                 post.StarGivenUserCount += 1;
                 post.SumStar += model.RateNumber;
                 post.Star = post.SumStar / post.StarGivenUserCount;
@@ -315,18 +283,15 @@ namespace Chefbook.API.Controllers
             }
             else
             {
-                
-                
-                post.SumStar += model.RateNumber-star.RateNumber;
+                post.SumStar += model.RateNumber - star.RateNumber;
                 post.Star = post.SumStar / post.StarGivenUserCount;
                 _postService.Update(post);
                 star.RateNumber = model.RateNumber;
                 _starService.Update(star);
 
-                return StatusCode(201, "Star Güncellendi."); ;
+                return StatusCode(201, "Star Güncellendi.");
+                ;
             }
-           
-            
         }
     }
 }

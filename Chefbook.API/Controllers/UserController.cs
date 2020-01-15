@@ -221,7 +221,7 @@ namespace Chefbook.API.Controllers
             var walluser = _userService.Wall(Guid.Parse(currentUserId));
             foreach (var model in walluser)
             {
-                model.StarNumber = model.StarNumber / _starService.GetAll().Count(i => i.Id == model.StarId);
+                //model.StarNumber = model.StarNumber / _starService.GetAll().Count(i => i.Id == model.StarId);
             }
 
             return Ok(walluser);
