@@ -175,10 +175,14 @@ namespace Chefbook.API.Controllers
 
         [HttpPost]
         [Route("addpost")]
-        public IActionResult AddPost(string title, string description, string[] steps, string[] ingredients, [FromForm] IFormFile[] photos)
+        public IActionResult AddPost([FromForm]string title, [FromForm]string description, [FromForm]string[] steps, [FromForm]string[] ingredients, [FromForm] List<IFormFile> photos)
         {
             try
             {
+                if (title==null )
+                {
+                    return StatusCode(394);
+                }
                 if (steps == null || steps.Length == 0)
                 {
                     return StatusCode(395);
@@ -189,7 +193,7 @@ namespace Chefbook.API.Controllers
                     return StatusCode(396);
                 }
 
-                if (photos == null || photos.Length == 0)
+                if (photos == null || photos.Count == 0)
                 {
                     return StatusCode(397);
                 }
