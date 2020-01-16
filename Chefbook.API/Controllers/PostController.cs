@@ -54,6 +54,13 @@ namespace Chefbook.API.Controllers
             _cloudinary = new Cloudinary(account);
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("test")]
+        public string Test()
+        {
+            return "TEST";
+        }
 
         [HttpPost]
         [Route("add")]
@@ -73,7 +80,6 @@ namespace Chefbook.API.Controllers
                 if (model.Photos == null)
                 {
                     return StatusCode(398);
-
                 }
 
                 var images = new List<Image>();
@@ -83,7 +89,7 @@ namespace Chefbook.API.Controllers
                     var extention = Path.GetExtension(file.FileName);
                     if (extention == ".jpg" || extention == ".png")
                     {
-                        ImageUploadResult uploadResult;
+                        var uploadResult = new ImageUploadResult();
 
                         using (var stream = file.OpenReadStream())
                         {
@@ -159,8 +165,6 @@ namespace Chefbook.API.Controllers
                 });
 
 
-           
-
                 return Ok("Success");
             }
             catch (Exception e)
@@ -171,94 +175,63 @@ namespace Chefbook.API.Controllers
 
         [HttpPost]
         [Route("addpost")]
-        public IActionResult AddPost(string title, string description, string[] steps, string[] ingredients, IFormFile[] photos)
+        public IActionResult AddPost(string title, string description, string[] steps, string[] ingredients, [FromBody] IFormFile[] photos)
         {
             try
             {
-                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+                if (steps == null || steps.Length == 0)
+                {
+                    return StatusCode(395);
+                }
 
-                var guid = Guid.NewGuid();
+                if (ingredients == null || ingredients.Length == 0)
+                {
+                    return StatusCode(396);
+                }
 
-                if (photos.Length <= 0)
+                if (photos == null || photos.Length == 0)
                 {
                     return StatusCode(397);
                 }
-                
+
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+                var guid = Guid.NewGuid();
 
                 var images = new List<Image>();
 
                 foreach (var file in photos)
                 {
                     var extention = Path.GetExtension(file.FileName);
-                    if (extention == ".jpg" || extention == ".png")
+                    if (extention != ".jpg" && extention != ".png") continue;
+
+                    ImageUploadResult uploadResult;
+
+                    using (var stream = file.OpenReadStream())
                     {
-                        ImageUploadResult uploadResult;
-
-                        using (var stream = file.OpenReadStream())
+                        var uploadParams = new ImageUploadParams
                         {
-                            var uploadParams = new ImageUploadParams
-                            {
-                                File = new FileDescription(file.Name, stream),
-                            };
-                            uploadResult = _cloudinary.Upload(uploadParams);
-                        }
-
-                        images.Add(new Image
-                        {
-                            Id = Guid.NewGuid(),
-                            ImageUrls = uploadResult.Uri.ToString(),
-                            PostId = guid,
-                            PublicId = uploadResult.PublicId
-                        });
+                            File = new FileDescription(file.Name, stream),
+                        };
+                        uploadResult = _cloudinary.Upload(uploadParams);
                     }
 
-                    if (extention == ".mp4")
+                    images.Add(new Image
                     {
-                        var uploadvideoResult = new VideoUploadResult();
-                        using (var stream = file.OpenReadStream())
-                        {
-                            var uploadParams = new VideoUploadParams()
-                            {
-                                File = new FileDescription(file.Name, stream)
-                            };
-                            uploadvideoResult = _cloudinary.Upload(uploadParams);
-                        }
-
-                        images.Add(new Image
-                        {
-                            Id = Guid.NewGuid(),
-                            ImageUrls = uploadvideoResult.Uri.ToString(),
-                            PostId = guid,
-                            PublicId = uploadvideoResult.PublicId
-                        });
-                    }
+                        Id = Guid.NewGuid(),
+                        ImageUrls = uploadResult.Uri.ToString(),
+                        PostId = guid,
+                        PublicId = uploadResult.PublicId
+                    });
                 }
-
-
                 _imageService.AddRange(images);
-                if (steps != null)
-                {
-                    List<Step> stepler = new List<Step>();
-                    foreach (var step in steps)
-                    {
-                        stepler.Add(new Step { Id = Guid.NewGuid(), PostId = guid, Description = step });
-                    }
 
-                    _stepService.AddRange(stepler);
-                }
+                var stepler = steps.Select(step => new Step {Id = Guid.NewGuid(), PostId = guid, Description = step}).ToList();
+                _stepService.AddRange(stepler);
 
-                if (ingredients != null)
-                {
-                    List<Ingredients> ingredientses = new List<Ingredients>();
-                    foreach (var ingredient in ingredients)
-                    {
-                        ingredientses.Add(new Ingredients
-                        { Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient });
-                    }
 
-                    _ingredientService.AddRange(ingredientses);
-                }
-
+                var ingredientses = ingredients.Select(ingredient => new Ingredients {Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient}).ToList();
+                _ingredientService.AddRange(ingredientses);
 
                 _postService.Add(new Post
                 {
@@ -267,14 +240,11 @@ namespace Chefbook.API.Controllers
                     UserId = Guid.Parse(currentUserId),
                     PostDate = DateTime.Now,
                     LikeCount = 0,
-                    Title =title,
+                    Title = title,
                     StarGivenUserCount = 0,
                     SumStar = 0,
                     Star = 0
                 });
-
-
-
 
                 return Ok("Success");
             }
@@ -302,7 +272,7 @@ namespace Chefbook.API.Controllers
             }
             catch (Exception e)
             {
-                return StatusCode(399,"hata");
+                return StatusCode(399, "hata");
             }
         }
 

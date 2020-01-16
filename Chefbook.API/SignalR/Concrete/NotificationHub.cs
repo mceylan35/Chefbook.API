@@ -30,7 +30,8 @@ namespace Chefbook.API.SignalR.Concrete
         private IImageService _imageService;
         private IStarService _starService;
 
-        public NotificationHub(IUserService userService, IConfiguration configuration, IFollowService followService, IPostService postService, IImageService imageService, IStarService starService)
+        public NotificationHub(IUserService userService, IConfiguration configuration, IFollowService followService,
+            IPostService postService, IImageService imageService, IStarService starService)
         {
             _userService = userService;
             _configuration = configuration;
@@ -42,39 +43,36 @@ namespace Chefbook.API.SignalR.Concrete
 
         public override async Task OnConnectedAsync()
         {
-          //  var currentUserId = Context.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            //  var currentUserId = Context.User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-          using (var context = new ChefContext())
-          {
-              var connection =
-                  context.Connection.FirstOrDefault(i =>
-                      i.UserId == Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"));
-              if (connection != null)
-              {
-                  connection.ConnectionId = Context.ConnectionId;
-                  connection.Connected = true;
+            using (var context = new ChefContext())
+            {
+                var connection =
+                    context.Connection.FirstOrDefault(i =>
+                        i.UserId == Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"));
+                if (connection != null)
+                {
+                    connection.ConnectionId = Context.ConnectionId;
+                    connection.Connected = true;
+                }
+                else
+                {
+                    context.Connection.Add(new Connection
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"),
+                        ConnectionId = Context.ConnectionId
+                    });
+                }
 
-              }
-              else
-              {
-                  context.Connection.Add(new Connection
-                  {
-                      Id = Guid.NewGuid(),
-                      UserId = Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"),
-                      ConnectionId = Context.ConnectionId
-                  });
-                
-              }
-              context.SaveChanges();
-
-
+                context.SaveChanges();
 
 
                 await Clients.Caller.SendAsync("GetConnectionId",
-                  this.Context.ConnectionId); //Client tarafına ConnectionId yolladım
+                    this.Context.ConnectionId); //Client tarafına ConnectionId yolladım
 
-              await base.OnConnectedAsync();
-          }
+                await base.OnConnectedAsync();
+            }
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
@@ -84,20 +82,20 @@ namespace Chefbook.API.SignalR.Concrete
                 var connection = context.Connection.FirstOrDefault(i => i.ConnectionId == Context.ConnectionId);
                 connection.Connected = false;
                 context.SaveChanges();
-                
             }
 
             return base.OnDisconnectedAsync(exception);
         }
-      //  [AllowAnonymous]
-        public  Task SendNotification(Guid whoId, Guid sendId, string message)
+
+        //  [AllowAnonymous]
+        public Task SendNotification(Guid whoId, Guid sendId, string message)
         {
-            using (var context=new ChefContext())
+            using (var context = new ChefContext())
             {
-                var who = context.Connection.FirstOrDefault(i => i.UserId == whoId &&i.Connected==true);
-                if (who!=null)
+                var who = context.Connection.FirstOrDefault(i => i.UserId == whoId && i.Connected == true);
+                if (who != null)
                 {
-                   return Clients.User(who.ConnectionId).SendAsync("NotificationGuncelle");
+                    return Clients.User(who.ConnectionId).SendAsync("NotificationGuncelle");
                 }
                 else
                 {
@@ -111,15 +109,5 @@ namespace Chefbook.API.SignalR.Concrete
         {
             return Context.ConnectionId;
         }
-      
-
-
-
-
-
-
-
-
-
     }
 }
