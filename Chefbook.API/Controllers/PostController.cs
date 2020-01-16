@@ -67,12 +67,13 @@ namespace Chefbook.API.Controllers
 
                 if (model.Photos.Count == 0)
                 {
-                    return BadRequest("Photos count is 0.");
+                    return StatusCode(397);
                 }
 
                 if (model.Photos == null)
                 {
-                    return BadRequest("Photos is null.");
+                    return StatusCode(398);
+
                 }
 
                 var images = new List<Image>();
@@ -95,7 +96,9 @@ namespace Chefbook.API.Controllers
 
                         images.Add(new Image
                         {
-                            Id = Guid.NewGuid(), ImageUrls = uploadResult.Uri.ToString(), PostId = guid,
+                            Id = Guid.NewGuid(),
+                            ImageUrls = uploadResult.Uri.ToString(),
+                            PostId = guid,
                             PublicId = uploadResult.PublicId
                         });
                     }
@@ -156,18 +159,128 @@ namespace Chefbook.API.Controllers
                 });
 
 
-                //_postService.CommitTransaction();
-                // _imageService.CommitTransaction();
-                // _stepService.CommitTransaction();
+           
 
                 return Ok("Success");
             }
             catch (Exception e)
             {
-                // _postService.RollbackTransaction();
-                //_imageService.RollbackTransaction();
-                // _stepService.RollbackTransaction();
-                return BadRequest(e);
+                return StatusCode(399);
+            }
+        }
+
+        [HttpPost]
+        [Route("addpost")]
+        public IActionResult AddPost(string title, string description, string[] steps, string[] ingredients, IFormFile[] photos)
+        {
+            try
+            {
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+                var guid = Guid.NewGuid();
+
+                if (photos.Length <= 0)
+                {
+                    return StatusCode(397);
+                }
+                
+
+                var images = new List<Image>();
+
+                foreach (var file in photos)
+                {
+                    var extention = Path.GetExtension(file.FileName);
+                    if (extention == ".jpg" || extention == ".png")
+                    {
+                        ImageUploadResult uploadResult;
+
+                        using (var stream = file.OpenReadStream())
+                        {
+                            var uploadParams = new ImageUploadParams
+                            {
+                                File = new FileDescription(file.Name, stream),
+                            };
+                            uploadResult = _cloudinary.Upload(uploadParams);
+                        }
+
+                        images.Add(new Image
+                        {
+                            Id = Guid.NewGuid(),
+                            ImageUrls = uploadResult.Uri.ToString(),
+                            PostId = guid,
+                            PublicId = uploadResult.PublicId
+                        });
+                    }
+
+                    if (extention == ".mp4")
+                    {
+                        var uploadvideoResult = new VideoUploadResult();
+                        using (var stream = file.OpenReadStream())
+                        {
+                            var uploadParams = new VideoUploadParams()
+                            {
+                                File = new FileDescription(file.Name, stream)
+                            };
+                            uploadvideoResult = _cloudinary.Upload(uploadParams);
+                        }
+
+                        images.Add(new Image
+                        {
+                            Id = Guid.NewGuid(),
+                            ImageUrls = uploadvideoResult.Uri.ToString(),
+                            PostId = guid,
+                            PublicId = uploadvideoResult.PublicId
+                        });
+                    }
+                }
+
+
+                _imageService.AddRange(images);
+                if (steps != null)
+                {
+                    List<Step> stepler = new List<Step>();
+                    foreach (var step in steps)
+                    {
+                        stepler.Add(new Step { Id = Guid.NewGuid(), PostId = guid, Description = step });
+                    }
+
+                    _stepService.AddRange(stepler);
+                }
+
+                if (ingredients != null)
+                {
+                    List<Ingredients> ingredientses = new List<Ingredients>();
+                    foreach (var ingredient in ingredients)
+                    {
+                        ingredientses.Add(new Ingredients
+                        { Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient });
+                    }
+
+                    _ingredientService.AddRange(ingredientses);
+                }
+
+
+                _postService.Add(new Post
+                {
+                    Id = guid,
+                    Description = description,
+                    UserId = Guid.Parse(currentUserId),
+                    PostDate = DateTime.Now,
+                    LikeCount = 0,
+                    Title =title,
+                    StarGivenUserCount = 0,
+                    SumStar = 0,
+                    Star = 0
+                });
+
+
+
+
+                return Ok("Success");
+            }
+            catch (Exception e)
+            {
+                return StatusCode(399);
             }
         }
 
@@ -189,7 +302,7 @@ namespace Chefbook.API.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(e);
+                return StatusCode(399,"hata");
             }
         }
 
