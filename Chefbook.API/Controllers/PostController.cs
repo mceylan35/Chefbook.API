@@ -175,59 +175,47 @@ namespace Chefbook.API.Controllers
 
         [HttpPost]
         [Route("addpost")]
-        public IActionResult AddPost([FromForm]string title, [FromForm]string description, [FromForm]string[] steps, [FromForm]string[] ingredients, [FromForm] List<IFormFile> photos)
+        public IActionResult AddPost([FromForm]string title, [FromForm]string description, [FromForm]string[] steps, [FromForm]string[] ingredients, [FromForm]IFormFile[] photos)
         {
             try
             {
-                if (title==null )
+                if (title == null || description == null || ingredients?.Length == 0 || steps?.Length == 0 || photos?.Length == 0)
                 {
-                    return StatusCode(394);
+                    return BadRequest(400);
                 }
-                if (steps == null || steps.Length == 0)
-                {
-                    return StatusCode(395);
-                }
-
-                if (ingredients == null || ingredients.Length == 0)
-                {
-                    return StatusCode(396);
-                }
-
-                if (photos == null || photos.Count == 0)
-                {
-                    return StatusCode(397);
-                }
-
+                
+                //Eğer gelen tüm parametrelerde en az 1 değer varsa aşağıdaki işlemler async olarak devam edilmeli
+                // Resim başka sunucuya upload olurken ve database yazma işlemlerinde kullanıcı bekletilmemeli
+                
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-
                 var guid = Guid.NewGuid();
-
                 var images = new List<Image>();
 
-                foreach (var file in photos)
-                {
-                    var extention = Path.GetExtension(file.FileName);
-                    if (extention != ".jpg" && extention != ".png") continue;
-
-                    ImageUploadResult uploadResult;
-
-                    using (var stream = file.OpenReadStream())
+                if (photos != null)
+                    foreach (var file in photos)
                     {
-                        var uploadParams = new ImageUploadParams
+                        var extension = Path.GetExtension(file.FileName);
+                        if (extension != ".jpg" && extension != ".png" && extension != ".jpeg") continue;
+                        ImageUploadResult uploadResult;
+
+                        using (var stream = file.OpenReadStream())
                         {
-                            File = new FileDescription(file.Name, stream),
-                        };
-                        uploadResult = _cloudinary.Upload(uploadParams);
+                            var uploadParams = new ImageUploadParams
+                            {
+                                File = new FileDescription(file.Name, stream),
+                            };
+                            uploadResult = _cloudinary.Upload(uploadParams);
+                        }
+
+                        images.Add(new Image
+                        {
+                            Id = Guid.NewGuid(),
+                            ImageUrls = uploadResult.Uri.ToString(),
+                            PostId = guid,
+                            PublicId = uploadResult.PublicId
+                        });
                     }
 
-                    images.Add(new Image
-                    {
-                        Id = Guid.NewGuid(),
-                        ImageUrls = uploadResult.Uri.ToString(),
-                        PostId = guid,
-                        PublicId = uploadResult.PublicId
-                    });
-                }
                 _imageService.AddRange(images);
 
                 var stepler = steps.Select(step => new Step {Id = Guid.NewGuid(), PostId = guid, Description = step}).ToList();
