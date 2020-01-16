@@ -57,9 +57,9 @@ namespace Chefbook.API.Controllers
         [HttpGet]
         [AllowAnonymous]
         [Route("test")]
-        public string Test()
+        public IActionResult Test()
         {
-            return "TEST";
+            return Ok(_imageService.GetAll().Select(i=>i.ImageUrls));
         }
 
         [HttpPost]
@@ -175,7 +175,7 @@ namespace Chefbook.API.Controllers
 
         [HttpPost]
         [Route("addpost")]
-        public IActionResult AddPost(string title, string description, string[] steps, string[] ingredients, [FromBody] IFormFile[] photos)
+        public IActionResult AddPost(string title, string description, string[] steps, string[] ingredients, [FromForm] IFormFile[] photos)
         {
             try
             {
