@@ -173,9 +173,42 @@ namespace Chefbook.API.Controllers
             }
         }
 
+
+        [NonAction]
+        public async Task<bool>  FileUpload(IFormFile[] photos,Guid guid)
+        {
+            var images = new List<Image>();
+            foreach (var file in photos)
+            {
+                var extension = Path.GetExtension(file.FileName);
+                if (extension != ".jpg" && extension != ".png" && extension != ".jpeg") continue;
+                ImageUploadResult uploadResult;
+
+                using (var stream = file.OpenReadStream())
+                {
+                    var uploadParams = new ImageUploadParams
+                    {
+                        File = new FileDescription(file.Name, stream),
+                    };
+                    uploadResult = _cloudinary.Upload(uploadParams);
+                }
+
+                images.Add(new Image
+                {
+                    Id = Guid.NewGuid(),
+                    ImageUrls = uploadResult.Uri.ToString(),
+                    PostId = guid,
+                    PublicId = uploadResult.PublicId
+                });
+            }
+            _imageService.AddRange(images);
+            return true;
+
+        }
+
         [HttpPost]
         [Route("addpost")]
-        public IActionResult AddPost([FromForm]string title, [FromForm]string description, [FromForm]string[] steps, [FromForm]string[] ingredients, [FromForm]IFormFile[] photos)
+        public async Task<IActionResult> AddPost([FromForm]string title, [FromForm]string description, [FromForm]string[] steps, [FromForm]string[] ingredients, [FromForm]IFormFile[] photos)
         {
             try
             {
@@ -189,34 +222,13 @@ namespace Chefbook.API.Controllers
                 
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 var guid = Guid.NewGuid();
-                var images = new List<Image>();
+                
 
                 if (photos != null)
-                    foreach (var file in photos)
-                    {
-                        var extension = Path.GetExtension(file.FileName);
-                        if (extension != ".jpg" && extension != ".png" && extension != ".jpeg") continue;
-                        ImageUploadResult uploadResult;
+                   await FileUpload(photos, guid);
+       
 
-                        using (var stream = file.OpenReadStream())
-                        {
-                            var uploadParams = new ImageUploadParams
-                            {
-                                File = new FileDescription(file.Name, stream),
-                            };
-                            uploadResult = _cloudinary.Upload(uploadParams);
-                        }
-
-                        images.Add(new Image
-                        {
-                            Id = Guid.NewGuid(),
-                            ImageUrls = uploadResult.Uri.ToString(),
-                            PostId = guid,
-                            PublicId = uploadResult.PublicId
-                        });
-                    }
-
-                _imageService.AddRange(images);
+                
 
                 var stepler = steps.Select(step => new Step {Id = Guid.NewGuid(), PostId = guid, Description = step}).ToList();
                 _stepService.AddRange(stepler);
@@ -238,7 +250,7 @@ namespace Chefbook.API.Controllers
                     Star = 0
                 });
 
-                return Ok("Success");
+                return StatusCode(200, "Başarılı");
             }
             catch (Exception e)
             {

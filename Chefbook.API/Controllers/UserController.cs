@@ -72,7 +72,13 @@ namespace Chefbook.API.Controllers
 
             if (await _userService.UserExists(user.UserName))
             {
+                ModelState.AddModelError("Mail", "UserName already exists");
+                return StatusCode(302, "Kullanıcı Mevcut");
+            }
+            if (await _userService.MailExists(user.Mail))
+            {
                 ModelState.AddModelError("Mail", "Mail already exists");
+                return StatusCode(302, "Mail Mevcut");
             }
 
             try
@@ -93,7 +99,7 @@ namespace Chefbook.API.Controllers
             }
             catch (Exception)
             {
-                throw;
+                return StatusCode(302, "Hata oluştu");
             }
         }
 
@@ -120,12 +126,12 @@ namespace Chefbook.API.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()), //kullan�c� �d tutuyoruz
-                    new Claim(ClaimTypes.Name, mail) // kullan�c� maili tutuyoruz
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()), 
+                    new Claim(ClaimTypes.Name, mail) 
                 }),
-                Expires = DateTime.Now.AddDays(30), //1g�n oturum s�resi
+                Expires = DateTime.Now.AddDays(30), 
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha512Signature) //�ifreleme k�sm�
+                    SecurityAlgorithms.HmacSha512Signature) 
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor); //token� �ret
@@ -219,10 +225,7 @@ namespace Chefbook.API.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             var walluser = _userService.Wall(Guid.Parse(currentUserId));
-            foreach (var model in walluser)
-            {
-                //model.StarNumber = model.StarNumber / _starService.GetAll().Count(i => i.Id == model.StarId);
-            }
+         
 
             return Ok(walluser);
         }
@@ -286,6 +289,8 @@ namespace Chefbook.API.Controllers
             }
         }
 
+    
+
         [HttpPost("changepassword")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel changePasswordViewModel)
@@ -313,7 +318,7 @@ namespace Chefbook.API.Controllers
                 }
             }
 
-            return StatusCode(302, "Bir hata  olu�tu.");
+            return StatusCode(302, "Bir hata  olustu.");
         }
 
 
@@ -334,7 +339,7 @@ namespace Chefbook.API.Controllers
                 });
             }
 
-            return StatusCode(301, "hata Olu�tu");
+            return StatusCode(301, "hata Oluştu");
             //return BadRequest("Bir hata olu�tu.");
         }
 
@@ -370,7 +375,7 @@ namespace Chefbook.API.Controllers
 
                         if (isExistingMail.Result)
                         {
-                            return StatusCode(302, "B�yle bir Mail var.");
+                            return StatusCode(302, "Boyle bir Mail var.");
                         }
                         else
                         {
@@ -384,15 +389,15 @@ namespace Chefbook.API.Controllers
                         user.NameSurName = model.NameSurName;
                     _userService.Update(user);
 
-                    return StatusCode(200, "Bilgiler G�ncellendi.");
+                    return StatusCode(200, "Bilgiler Güncellendi.");
                 }
                 else
                 {
-                    return StatusCode(304, "Bilgiler G�ncellenmedi.");
+                    return StatusCode(304, "Bilgiler Güncellenmedi.");
                 }
             }
 
-            return BadRequest("Hata olu�tu");
+            return BadRequest("Hata olustu");
         }
     }
 }

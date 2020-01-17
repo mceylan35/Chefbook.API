@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Chefbook.API.Models
 {
-    public class WallPostViewModel
+    public class TestWall
     {
         public Guid PostId { get; set; }
         public string NameSurName { get; set; }

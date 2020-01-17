@@ -14,12 +14,12 @@ namespace Chefbook.API.Services.Service
 {
     public class ImageService : GenericRepository<Image, ChefContext>, IImageService
     {
-        public void AddRange(List<Image> images)
+        public async void AddRange(List<Image> images)
         {
             using (var context=new ChefContext())
             {
                     context.Image.AddRange(images);
-                    context.SaveChanges();
+                   await context.SaveChangesAsync();
                 
                 
             }
@@ -46,6 +46,10 @@ namespace Chefbook.API.Services.Service
                     });
                 return findImages.ToList();
             }
+            
         }
+
+       
+
     }
 }

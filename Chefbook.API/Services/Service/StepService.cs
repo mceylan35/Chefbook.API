@@ -12,13 +12,13 @@ namespace Chefbook.API.Services.Service
 {
     public class StepService : GenericRepository<Step, ChefContext>, IStepService
     {
-        public void AddRange(List<Step> steps)
+        public async void AddRange(List<Step> steps)
         {
             using (var context=new ChefContext())
             {
                 context.Step.AddRange(steps);
                 
-                context.SaveChanges();
+              await context.SaveChangesAsync();
             }
         }
     }

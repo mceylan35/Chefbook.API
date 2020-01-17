@@ -10,5 +10,6 @@ namespace Chefbook.API.Services.Interface
     public interface IStepService : IGenericRepository<Step>
     {
         void AddRange(List<Step> steps);
+
     }
 }

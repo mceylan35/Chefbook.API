@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Chefbook.API.Context;
 using Chefbook.API.Models;
@@ -42,6 +43,8 @@ namespace Chefbook.API.Services.RepositoryServices
                 return user;
             }
         }
+
+    
         public async Task<User> Register(User user, string password)
         {
             byte[] passwordHash, passwordSalt;
@@ -61,9 +64,9 @@ namespace Chefbook.API.Services.RepositoryServices
             {
                 if (await _context.User.AllAsync(x => x.UserName == username))
                 {
-                    return true;
+                    return false;
                 }
-                return false;
+                return true;
             }
 
         }
@@ -73,9 +76,9 @@ namespace Chefbook.API.Services.RepositoryServices
             {
                 if (await _context.User.AllAsync(x => x.Mail == mail))
                 {
-                    return true;
+                    return false;
                 }
-                return false;
+                return true;
             }
 
         }
@@ -187,32 +190,161 @@ namespace Chefbook.API.Services.RepositoryServices
             using (var context=new ChefContext())
             {
 
-               
-         
-                var outputList = from p in context.Post
-                                 join u in context.User on p.UserId equals u.Id
-                                 join fo in context.Follow on u.Id equals userId
-                                 join s in context.Star on p.Id equals s.PostId
-                               //  group new { p, u, } by new { u.UserName, u.Description,p.Id,p.LikeCount,p.PostDate,u.ProfileImage,p.Title,p.Star,u.NameSurName } into g
 
 
-                                 select new WallPostViewModel
-                                 {
-                                    
-                                     NameSurName = u.NameSurName.Trim(),
-                                     PostId = p.Id,
-                                     Description = u.Description.Trim(),
-                                     LikeCount = p.LikeCount,
-                                     PostDate = p.PostDate,
-                                     ProfileImage = u.ProfileImage,
-                                     Title = p.Title.Trim(),
-                                     UserName = u.UserName,
-                                     Star = p.Star
+             
+                var takipettiklerim = context.Follow.Where(i => i.FollowingId == userId).Select(f=>f.FollowersId);
+                List<Post> takipettikleriminpostlari =new List<Post>();
+                foreach (var guid in takipettiklerim)
+                {
+                     takipettikleriminpostlari.AddRange( context.Post.Where(i => i.UserId == guid)); 
+                }
 
-                                 };
+                var kendipostlarim = context.Post.Where(i => i.UserId == userId);
+                takipettikleriminpostlari.AddRange(kendipostlarim);
+                takipettikleriminpostlari = takipettikleriminpostlari.OrderByDescending(i => i.PostDate).ToList();
+
+                List<WallPostViewModel> duvarpostlarim=new List<WallPostViewModel>();
+                foreach (var post in takipettikleriminpostlari)
+                {
+                    DateTime tarih = Convert.ToDateTime(post.PostDate);
+                    TimeSpan aralik = DateTime.Now - tarih;
+
+                    if (aralik.Minutes<=1)
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(aralik.Seconds);
+                        builder.Append(" saniye önce");
+                        var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        duvarpostlarim.Add(new WallPostViewModel
+                        {
+                            PostId = post.Id,
+                            Star = post.Star,
+                            Description = post.Description,
+                            LikeCount = post.LikeCount,
+                            UserName = kullanici.UserName,
+                            NameSurName = kullanici.NameSurName,
+                            Title = post.Title,
+                            ProfileImage = kullanici.ProfileImage,
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostDate = builder.ToString(),
+
+                        });
+                    }
+
+                    else if (aralik.Hours<=1)
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(aralik.Minutes);
+                        builder.Append(" dakika önce");
+                        var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        duvarpostlarim.Add(new WallPostViewModel
+                        {
+                            PostId = post.Id,
+                            Star = post.Star,
+                            Description = post.Description,
+                            LikeCount = post.LikeCount,
+                            UserName = kullanici.UserName,
+                            NameSurName = kullanici.NameSurName,
+                            Title = post.Title,
+                            ProfileImage = kullanici.ProfileImage,
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostDate = builder.ToString(),
+
+                        });
+                    }
+
+                   else if (aralik.Days <= 1)
+                    {
+
+                        
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(aralik.Hours);
+                        builder.Append(" saat önce");
+                        var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        duvarpostlarim.Add(new WallPostViewModel
+                        {
+                            PostId = post.Id,
+                            Star = post.Star,
+                            Description = post.Description,
+                            LikeCount = post.LikeCount,
+                            UserName = kullanici.UserName,
+                            NameSurName = kullanici.NameSurName,
+                            Title = post.Title,
+                            ProfileImage = kullanici.ProfileImage,
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostDate = builder.ToString(),
+
+                        });
+
+                    }
+
+                    else if (aralik.Days > 1 || aralik.Days < 30)
+                    {
+                       // string saat  = aralik.Days + " gün";
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(aralik.Days);
+                        builder.Append(" gün önce");
+                        var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        duvarpostlarim.Add(new WallPostViewModel
+                        {
+                            PostId = post.Id,
+                            Star = post.Star,
+                            Description = post.Description.Trim(),
+                            LikeCount = post.LikeCount,
+                            UserName = kullanici.UserName,
+                            NameSurName = kullanici.NameSurName,
+                            Title = post.Title.Trim(),
+                            ProfileImage = kullanici.ProfileImage,
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostDate = builder.ToString(),
+
+                        });
+                        
+                    }
+                    else
+                    {
+                        string saat = tarih.ToLongDateString();
+
+                        var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        duvarpostlarim.Add(new WallPostViewModel
+                        {
+                            PostId = post.Id,
+                            Star = post.Star,
+                            Description = post.Description,
+                            LikeCount = post.LikeCount,
+                            UserName = kullanici.UserName,
+                            NameSurName = kullanici.NameSurName,
+                            Title = post.Title,
+                            ProfileImage = kullanici.ProfileImage,
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostDate = post.PostDate.ToString(),
+
+                        });
+                    }
+
+                   
+                }
 
 
-                return outputList.ToList();
+
+
+                ////< 24 hours "x saat"
+                ////< 30 gün "x gün önce"
+                ////> 30 gün "30 Mayýs 2019
+                //List <WallPostViewModel> walllist=new List<WallPostViewModel>();
+                //foreach (var model in outputList.ToList())
+                //{
+                   
+                   
+
+                   
+
+                   
+                //}
+
+
+                return duvarpostlarim;
             }
 
             

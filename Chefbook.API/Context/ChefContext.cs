@@ -19,6 +19,7 @@ namespace Chefbook.API.Context
 
         public ChefContext()
         {
+            
         }
 
         public ChefContext(DbContextOptions<ChefContext> options)
