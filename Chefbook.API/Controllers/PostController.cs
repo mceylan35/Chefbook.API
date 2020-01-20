@@ -175,14 +175,14 @@ namespace Chefbook.API.Controllers
 
 
         [NonAction]
-        public async Task<bool>  FileUpload(IFormFile[] photos,Guid guid)
+        public void  FileUpload(IFormFile[] photos,Guid guid)
         {
             var images = new List<Image>();
             foreach (var file in photos)
             {
                 var extension = Path.GetExtension(file.FileName);
-                if (extension != ".jpg" && extension != ".png" && extension != ".jpeg") continue;
-                ImageUploadResult uploadResult;
+                if (extension != ".jpg" || extension != ".png" || extension != ".jpeg") {
+                 ImageUploadResult uploadResult;
 
                 using (var stream = file.OpenReadStream())
                 {
@@ -200,9 +200,10 @@ namespace Chefbook.API.Controllers
                     PostId = guid,
                     PublicId = uploadResult.PublicId
                 });
+                }
             }
             _imageService.AddRange(images);
-            return true;
+          //  return true;
 
         }
 
@@ -225,19 +226,33 @@ namespace Chefbook.API.Controllers
                 
 
                 if (photos != null)
-                   await FileUpload(photos, guid);
-       
-
+                {
+                    
+                        //insert to db code;
+                        FileUpload(photos, guid);
                 
 
+
+                    // await Task.Run(() => {  });
+                }
+
+
+
                 var stepler = steps.Select(step => new Step {Id = Guid.NewGuid(), PostId = guid, Description = step}).ToList();
-                _stepService.AddRange(stepler);
+                if (stepler.Count!=0)
+                {
+                  
+                        _stepService.AddRange(stepler);
+                  
+                }
+               
 
 
                 var ingredientses = ingredients.Select(ingredient => new Ingredients {Id = Guid.NewGuid(), PostId = guid, Ingredient = ingredient}).ToList();
-                _ingredientService.AddRange(ingredientses);
-
-                _postService.Add(new Post
+               
+                    _ingredientService.AddRange(ingredientses);
+               
+                    _postService.Add(new Post
                 {
                     Id = guid,
                     Description = description,
@@ -249,6 +264,7 @@ namespace Chefbook.API.Controllers
                     SumStar = 0,
                     Star = 0
                 });
+               
 
                 return StatusCode(200, "Başarılı");
             }
@@ -288,9 +304,9 @@ namespace Chefbook.API.Controllers
             return Ok(detay);
         }
 
-        [HttpGet]
-        [Route("like/{postId}")]
-        public IActionResult LikePost(Guid postId)
+        [HttpPost]
+        [Route("like")]
+        public IActionResult LikePost([FromForm]Guid postId)
         {
             try
             {

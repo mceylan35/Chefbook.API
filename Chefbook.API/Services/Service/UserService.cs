@@ -64,9 +64,9 @@ namespace Chefbook.API.Services.RepositoryServices
             {
                 if (await _context.User.AllAsync(x => x.UserName == username))
                 {
-                    return false;
+                    return true;
                 }
-                return true;
+                return false;
             }
 
         }
@@ -76,9 +76,9 @@ namespace Chefbook.API.Services.RepositoryServices
             {
                 if (await _context.User.AllAsync(x => x.Mail == mail))
                 {
-                    return false;
+                    return true;
                 }
-                return true;
+                return false;
             }
 
         }
@@ -104,87 +104,108 @@ namespace Chefbook.API.Services.RepositoryServices
 
             using (var context=new ChefContext())
             {
-                //var begendiklerim = (from p in context.Post
-                //    join s in context.Sticker on p.Id equals s.PostId 
-                //    join u in context.User on p.UserId equals u.Id
-                //    join l in context.Like on p.Id equals l.Id
-                //    join f in context.Follow on p.Id equals f.FollowingId
-                //    where f.FollowersId == userId
+          
 
-                //    select new ExplorePostViewModel
-                //    {
 
-                //        NameSurName = u.NameSurName.Trim(),
-                //        PostId = p.Id,
-                //        Description = u.Description.Trim(),
-                //        LikeCount = p.LikeCount,
-                //        PostDate = p.PostDate,
-                //        ProfileImage = u.ProfileImage,
-                //        Title = p.Title.Trim(),
-                //        UserName = u.UserName,
-                //        Star = p.Star,
-                //        Sticker=s.Name
+                var takipettiklerim = context.Follow.Where(i => i.FollowingId == userId).Select(f => f.FollowersId);
+                List<Post> takipettikleriminpostlari = new List<Post>();
+                foreach (var guid in takipettiklerim)
+                {
+                    takipettikleriminpostlari.AddRange(context.Post.Where(i => i.UserId == guid));
+                }
 
-                //    }).ToList();
-                //////////////////////////////////////////////////////////////////////////////////////
-                //var kesfet = (from p in context.Post
-                //    join s in context.Sticker on p.Id equals s.PostId
-                //    join u in context.User on p.UserId equals u.Id
-                //    join l in context.Like on p.Id equals l.Id
-                //    join f in context.Follow on p.Id equals f.FollowingId
-                //    where f.FollowersId != userId
+                var kendipostlarim = context.Post.Where(i => i.UserId == userId);
+                takipettikleriminpostlari.AddRange(kendipostlarim);
+                var postlar = context.Post.ToList();
+               var kesfetim= postlar.Except(takipettikleriminpostlari).ToList();
 
-                //              select new ExplorePostViewModel
-                //    {
-
-                //        NameSurName = u.NameSurName.Trim(),
-                //        PostId = p.Id,
-                //        Description = u.Description.Trim(),
-                //        LikeCount = p.LikeCount,
-                //        PostDate = p.PostDate,
-                //        ProfileImage = u.ProfileImage,
-                //        Title = p.Title.Trim(),
-                //        UserName = u.UserName,
-                //        Star = p.Star,
-                //        Sticker = s.Name
-
-                //    }).ToList();
-                //List<ExplorePostViewModel> explore=new List<ExplorePostViewModel>();
-                //foreach (var b in begendiklerim)
-                //{
-                //     explore.AddRange(kesfet.Where(i=>i.Sticker.Contains(b.Sticker)));
-
-                //}
-                var kesfet =(
-                    from p in context.Post
-                    join u in context.User on p.Id equals u.Id 
-                    where (from o in context.Post
-                            select o.Id)
-                        .Contains(p.UserId)
-                    select new ExplorePostViewModel
+                List<ExplorePostViewModel> kesfetlist=new List<ExplorePostViewModel>();
+               foreach (var post in kesfetim)
+               {
+                   var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                    if (kullanici != null) { 
+                     kesfetlist.Add(new ExplorePostViewModel
                     {
+                       Description = post.Description.Trim(),
+                      
+                       Title = post.Title.Trim(),
+                       LikeCount = post.LikeCount,
+                       PostId = post.Id,
+                       ProfileImage = kullanici.ProfileImage,
+                       UserName = kullanici.UserName,
+                       PostDate = post.PostDate,
+                       NameSurName = kullanici.NameSurName,
+                       Star = post.Star,
+                       PostImage = context.Image.Where(i=>i.PostId==post.Id).Select(p=>new Picture
+                       {
+                           PictureUrl = p.ImageUrls
+                       }).ToList(),
+                       CommentCount = context.Comment.Count(i=>i.PostId==post.Id),
+                      
 
-                        NameSurName = u.NameSurName.Trim(),
-                        PostId = p.Id,
-                        Description = u.Description.Trim(),
-                        LikeCount = p.LikeCount,
-                        PostDate = p.PostDate,
-                        ProfileImage = u.ProfileImage,
-                        Title = p.Title.Trim(),
-                        UserName = u.UserName,
-                        Star = p.Star,
-                        //Sticker = s.Name
+                       
 
-                    }).ToList();
+                   }); }
+                }
 
 
-
-
-                return null;
+                return kesfetlist;
 
             }
            
         }
+
+        public ProfileDto Profile(Guid userId)
+        {
+            
+
+
+            using (var context=new ChefContext())
+            {
+                
+                var posts = context.Post.Where(i => i.UserId == userId).OrderByDescending(i=>i.PostDate).ToList();
+                var kullanici = context.User.FirstOrDefault(i => i.Id == userId);
+                ProfileDto profileDto = new ProfileDto();
+                if (kullanici!=null)
+                {
+                    List<ProfilePostsDto> pplist=new List<ProfilePostsDto>();
+                    foreach (var post in posts)
+                    {
+                        pplist.Add(new ProfilePostsDto
+                        {
+                            CommentCount = context.Comment.Count(i=>i.PostId==post.Id).ToString(),
+                            Description = post.Description.Trim(),
+                            Id = post.Id,
+                            LikeCount = post.LikeCount.ToString(),
+                            PictureUrl = context.Image.Where(i=>i.PostId==post.Id).Select(i=>i.ImageUrls).FirstOrDefault(),
+                            Title = post.Title.Trim(),
+                            RateNumber = post.Star.ToString()
+
+                        });
+
+                    }
+                   
+
+
+
+
+                    profileDto.UserName = kullanici.UserName.Trim();
+                    profileDto.Cover = kullanici.CoverImage;
+                    profileDto.Description = kullanici.Description;
+                    profileDto.FullName = kullanici.NameSurName.Trim();
+                    profileDto.FollowerCount = 0;
+                    profileDto.PostCount = posts.Count;
+                    profileDto.ProfilePicture = kullanici.ProfileImage;
+                    profileDto.ProfilePosts = pplist.Take(15).ToList();
+                }
+
+                return profileDto;
+
+            }
+        }
+
+
+
         public List<WallPostViewModel> Wall(Guid userId)
         {
             using (var context=new ChefContext())
@@ -197,12 +218,17 @@ namespace Chefbook.API.Services.RepositoryServices
                 List<Post> takipettikleriminpostlari =new List<Post>();
                 foreach (var guid in takipettiklerim)
                 {
-                     takipettikleriminpostlari.AddRange( context.Post.Where(i => i.UserId == guid)); 
+                    var postlar = context.Post.Where(i => i.UserId == guid);
+                    if (postlar!=null)
+                    {
+                        takipettikleriminpostlari.AddRange(postlar);
+                    }
+                    
                 }
 
                 var kendipostlarim = context.Post.Where(i => i.UserId == userId);
                 takipettikleriminpostlari.AddRange(kendipostlarim);
-                takipettikleriminpostlari = takipettikleriminpostlari.OrderByDescending(i => i.PostDate).ToList();
+                takipettikleriminpostlari = takipettikleriminpostlari.OrderByDescending(i => i.PostDate).Take(15).ToList();
 
                 List<WallPostViewModel> duvarpostlarim=new List<WallPostViewModel>();
                 foreach (var post in takipettikleriminpostlari)
@@ -213,9 +239,10 @@ namespace Chefbook.API.Services.RepositoryServices
                     if (aralik.Minutes<=1)
                     {
                         StringBuilder builder = new StringBuilder();
-                        builder.Append(aralik.Seconds);
-                        builder.Append(" saniye önce");
+                        //builder.Append(aralik);
+                        builder.Append("1 dakikadan önce");
                         var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        
                         duvarpostlarim.Add(new WallPostViewModel
                         {
                             PostId = post.Id,
@@ -226,8 +253,11 @@ namespace Chefbook.API.Services.RepositoryServices
                             NameSurName = kullanici.NameSurName,
                             Title = post.Title,
                             ProfileImage = kullanici.ProfileImage,
-                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => new Picture { PictureUrl = s.ImageUrls })
+                                .ToList(),
+
                             PostDate = builder.ToString(),
+                            CommentCount = context.Comment.Count(i=>i.PostId==post.Id)
 
                         });
                     }
@@ -238,6 +268,7 @@ namespace Chefbook.API.Services.RepositoryServices
                         builder.Append(aralik.Minutes);
                         builder.Append(" dakika önce");
                         var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        
                         duvarpostlarim.Add(new WallPostViewModel
                         {
                             PostId = post.Id,
@@ -248,8 +279,10 @@ namespace Chefbook.API.Services.RepositoryServices
                             NameSurName = kullanici.NameSurName,
                             Title = post.Title,
                             ProfileImage = kullanici.ProfileImage,
-                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
-                            PostDate = builder.ToString(),
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s=>new Picture{PictureUrl = s.ImageUrls})
+                                .ToList(),
+                        PostDate = builder.ToString(),
+                        CommentCount = context.Comment.Count(i => i.PostId == post.Id)
 
                         });
                     }
@@ -262,6 +295,7 @@ namespace Chefbook.API.Services.RepositoryServices
                         builder.Append(aralik.Hours);
                         builder.Append(" saat önce");
                         var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                       
                         duvarpostlarim.Add(new WallPostViewModel
                         {
                             PostId = post.Id,
@@ -272,8 +306,10 @@ namespace Chefbook.API.Services.RepositoryServices
                             NameSurName = kullanici.NameSurName,
                             Title = post.Title,
                             ProfileImage = kullanici.ProfileImage,
-                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => new Picture { PictureUrl = s.ImageUrls })
+                                .ToList(),
                             PostDate = builder.ToString(),
+                            CommentCount = context.Comment.Count(i => i.PostId == post.Id)
 
                         });
 
@@ -286,6 +322,7 @@ namespace Chefbook.API.Services.RepositoryServices
                         builder.Append(aralik.Days);
                         builder.Append(" gün önce");
                         var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        
                         duvarpostlarim.Add(new WallPostViewModel
                         {
                             PostId = post.Id,
@@ -296,8 +333,10 @@ namespace Chefbook.API.Services.RepositoryServices
                             NameSurName = kullanici.NameSurName,
                             Title = post.Title.Trim(),
                             ProfileImage = kullanici.ProfileImage,
-                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => new Picture { PictureUrl = s.ImageUrls })
+                                .ToList(),
                             PostDate = builder.ToString(),
+                            CommentCount = context.Comment.Count(i => i.PostId == post.Id)
 
                         });
                         
@@ -307,6 +346,7 @@ namespace Chefbook.API.Services.RepositoryServices
                         string saat = tarih.ToLongDateString();
 
                         var kullanici = context.User.FirstOrDefault(i => i.Id == post.UserId);
+                        
                         duvarpostlarim.Add(new WallPostViewModel
                         {
                             PostId = post.Id,
@@ -317,8 +357,10 @@ namespace Chefbook.API.Services.RepositoryServices
                             NameSurName = kullanici.NameSurName,
                             Title = post.Title,
                             ProfileImage = kullanici.ProfileImage,
-                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => s.ImageUrls).ToList(),
+                            PostImage = context.Image.Where(i => i.PostId == post.Id).Select(s => new Picture { PictureUrl = s.ImageUrls })
+                                .ToList(),
                             PostDate = post.PostDate.ToString(),
+                            CommentCount = context.Comment.Count(i => i.PostId == post.Id)
 
                         });
                     }
@@ -349,6 +391,7 @@ namespace Chefbook.API.Services.RepositoryServices
 
             
         }
+
 
         private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
         {

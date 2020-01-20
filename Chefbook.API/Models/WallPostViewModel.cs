@@ -16,6 +16,8 @@ namespace Chefbook.API.Models
         public long? LikeCount { get; set; }
         public string Title { get; set; }
         public double Star { get; set; }
-        public List<string> PostImage { get; set; }
+        public List<Picture> PostImage { get; set; }
+        public int CommentCount { get; set; }
+      // public string[] PostImage { get; set; }
     }
 }

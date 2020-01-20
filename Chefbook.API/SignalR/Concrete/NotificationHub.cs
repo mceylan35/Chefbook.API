@@ -68,8 +68,8 @@ namespace Chefbook.API.SignalR.Concrete
                 context.SaveChanges();
 
 
-                await Clients.Caller.SendAsync("GetConnectionId",
-                    this.Context.ConnectionId); //Client tarafına ConnectionId yolladım
+                await Clients.Caller.SendAsync("GetConnectionId", this.Context.ConnectionId);
+
 
                 await base.OnConnectedAsync();
             }
@@ -80,8 +80,11 @@ namespace Chefbook.API.SignalR.Concrete
             using (var context = new ChefContext())
             {
                 var connection = context.Connection.FirstOrDefault(i => i.ConnectionId == Context.ConnectionId);
-                connection.Connected = false;
-                context.SaveChanges();
+           
+                    connection.Connected = false;
+                    context.SaveChanges();
+             
+                
             }
 
             return base.OnDisconnectedAsync(exception);

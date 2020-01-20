@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Query;
 
 namespace Chefbook.API.Repository
 {
-    public interface IGenericRepository<T>: ITransactionAble where T : class, IEntity,new()
+    public interface IGenericRepository<T>:ITransactionAble where T : class, IEntity,new()
     {
         List<T> GetAll(Expression<Func<T, bool>> filter = null);
         T Get(Expression<Func<T, bool>> filter = null);

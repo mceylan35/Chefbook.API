@@ -20,5 +20,6 @@ namespace Chefbook.API.Services.RepositoryInterfaces
         List<WallPostViewModel> Wall(Guid userId);
         Task<bool> MailExists(string mail);
         List<ExplorePostViewModel> Explore(Guid? userId);
+        ProfileDto Profile(Guid userId);
     }
 }

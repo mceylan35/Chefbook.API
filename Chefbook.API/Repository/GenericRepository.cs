@@ -16,13 +16,13 @@ namespace Chefbook.API.Repository
         //DB bağlantısı sonrası context değişecek
         //private readonly ChefContext _dbContext;
         //private readonly DbSet<T> _dbSet;
- 
+
         //protected GenericRepository(ChefContext dbContext)
         //{
         //    this._dbContext = dbContext;
         //    this._dbSet = _dbContext.Set<T>();
         //}
- 
+       
         public void Add(T entity)
         {
            
@@ -141,7 +141,7 @@ namespace Chefbook.API.Repository
 
             }
         }
-
+       
 
         public IEnumerable<T> GetInclude(Func<IQueryable<T>, IIncludableQueryable<T, object>> includes = null)
         {

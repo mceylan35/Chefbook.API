@@ -62,6 +62,7 @@ namespace Chefbook.API.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO user)
         {
@@ -105,6 +106,7 @@ namespace Chefbook.API.Controllers
 
         [HttpPost]
         [Route("login")]
+        [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] LoginDTO login)
         {
             var user = await _userService.Login(login.Email, login.Password);
@@ -158,9 +160,9 @@ namespace Chefbook.API.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("search/{q}")]
-        public ActionResult Search(string q)
+        [HttpPost]
+        [Route("search")]
+        public ActionResult Search([FromForm]string q)
         {
             try
             {
@@ -170,12 +172,22 @@ namespace Chefbook.API.Controllers
                     return Ok(kullanicilar);
                 }
 
-                return NotFound("Kullan�c� Bulunamad�!");
+                return NotFound("Kullanici Bulunamadi");
             }
             catch (Exception e)
             {
                 return BadRequest(e);
             }
+        }
+
+        [HttpGet]
+        [Authorize]
+        [Route("explore")]
+        public IActionResult Explore()
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var kesfet = _userService.Explore(Guid.Parse(currentUserId));
+            return Ok(kesfet);
         }
 
         [HttpGet]
@@ -186,31 +198,17 @@ namespace Chefbook.API.Controllers
             try
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-                var kullanici = _userService.GetById(Guid.Parse(currentUserId));
                 long followersCount = _followService.GetFollowersCount(Guid.Parse(currentUserId));
-                long following = _followService.GetFollowingCount(Guid.Parse(currentUserId));
+               // long following = _followService.GetFollowingCount(Guid.Parse(currentUserId));
+               
+                 
+                var profile = _userService.Profile(Guid.Parse(currentUserId));
+                profile.FollowerCount = followersCount;
+                
 
 
-                var posts = _postService.GetAll(i => i.UserId == Guid.Parse(currentUserId));
-
-
-                ProfileDto profileDto = new ProfileDto();
-
-                profileDto.UserName = kullanici.UserName.Trim();
-                profileDto.Cover = kullanici.CoverImage;
-                profileDto.Description = kullanici.Description;
-                profileDto.FullName = kullanici.NameSurName.Trim();
-                profileDto.FollowerCount = followersCount;
-                profileDto.PostCount = posts.Count;
-                profileDto.ProfilePicture = kullanici.ProfileImage;
-                profileDto.ProfilePosts = _imageService.FindImage(Guid.Parse(currentUserId));
-
-
-                return Ok(profileDto);
-                //Sayfaya g�re de�i�ecek.
-
-
-                // return NotFound("Kullan�c� Bulunamad�!");
+                return Ok(profile);
+             
             }
             catch (Exception e)
             {

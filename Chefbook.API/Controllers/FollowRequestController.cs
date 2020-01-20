@@ -59,7 +59,7 @@ namespace Chefbook.API.Controllers
                 });
                 _hubContext.Clients.All.SendAsync("NotificationGuncelle");
                
-               _hubContext.Clients.User("P0m3D-Y_Ra5VZBd3ypUR5g").SendAsync("SendNotification", Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"), Guid.Parse("6f6dc2ff-b828-41d1-a27b-a993e944ce7e"), "asdsad");
+             //  _hubContext.Clients.User("P0m3D-Y_Ra5VZBd3ypUR5g").SendAsync("SendNotification", Guid.Parse("4bcbbcbf-d75f-4c0f-821c-2a833f800ff4"), Guid.Parse("6f6dc2ff-b828-41d1-a27b-a993e944ce7e"), "asdsad");
 
                return StatusCode(200, "Başarılı");
 
