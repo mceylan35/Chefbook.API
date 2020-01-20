@@ -13,7 +13,7 @@ namespace Chefbook.API.Context
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=tcp:bankappim.database.windows.net,1433;Initial Catalog=Chefbook;Persist Security Info=False;User ID=bankappim;Password=657193960Amc;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
+            optionsBuilder.UseSqlServer(@"Server=tcp:,1433;Initial Catalog=Chefbook;Persist Security Info=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
         }
 
 
